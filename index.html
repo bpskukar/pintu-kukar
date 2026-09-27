@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PINTU Kukar · Pencarian Internal Terpadu BPS Kutai Kartanegara</title>
+<meta name="description" content="Mesin pencari berkas internal BPS Kabupaten Kutai Kartanegara: temukan berkas dan folder Google Drive kantor dalam hitungan detik.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0F3B6E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>
+  /* tema: ikuti pilihan terakhir, atau pengaturan perangkat */
+  (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
+</script>
+</head>
+<body>
+
+<!-- ================= GERBANG MASUK ================= -->
+<div class="gerbang" id="gerbang">
+  <div class="gerbang-kartu">
+    <div class="gerbang-merek">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" class="logo-dasar"/><path d="M13.5 38V19a10.5 10.5 0 0 1 21 0v19" class="logo-pintu"/><path d="M9 38h30" class="logo-pintu"/><circle cx="23" cy="24" r="5" class="logo-kaca"/><path d="m26.8 27.8 4.2 4.2" class="logo-kaca"/></svg>
+      <div><p class="gerbang-nama">PINTU <span>Kukar</span></p><p class="gerbang-sub">Pencarian Internal Terpadu · BPS Kutai Kartanegara</p></div>
+    </div>
+    <div id="gerbang-isi" aria-live="polite"><p class="gerbang-muat"><span class="putar" aria-hidden="true"></span>Menyiapkan PINTU…</p></div>
+  </div>
+  <p class="gerbang-kaki">Khusus pegawai BPS Kabupaten Kutai Kartanegara</p>
+</div>
+
+<!-- ================= APLIKASI ================= -->
+<div id="aplikasi" hidden>
+  <a class="lompat" href="#utama">Langsung ke isi</a>
+  <header class="kepala">
+    <div class="bungkus kepala-baris">
+      <a class="merek" href="#/" aria-label="PINTU Kukar, beranda">
+        <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" class="logo-dasar"/><path d="M13.5 38V19a10.5 10.5 0 0 1 21 0v19" class="logo-pintu"/><path d="M9 38h30" class="logo-pintu"/><circle cx="23" cy="24" r="5" class="logo-kaca"/><path d="m26.8 27.8 4.2 4.2" class="logo-kaca"/></svg>
+        <span class="merek-teks"><strong>PINTU <em>Kukar</em></strong><small>Pencarian Internal Terpadu</small></span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Menu utama">
+        <a href="#/" data-nav="beranda">Cari</a>
+        <a href="#/kategori" data-nav="kategori">Kategori</a>
+        <a href="#/terbaru" data-nav="terbaru">Terbaru</a>
+        <a href="#/panduan" data-nav="panduan">Panduan</a>
+        <a class="nav-ext" id="tautan-peta" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder<span class="ext-tanda" data-ikon="external"></span></a>
+      </nav>
+      <div class="kepala-aksi">
+        <button class="tombol-ikon kelola-tombol" id="tombol-kelola" type="button" aria-pressed="false" hidden></button>
+        <button class="tombol-ikon" id="tombol-tema" type="button" aria-label="Ganti tema terang/gelap"></button>
+        <div class="akun-bungkus">
+          <button class="akun-tombol" id="tombol-akun" type="button" aria-haspopup="true" aria-expanded="false"></button>
+          <div class="akun-menu" id="menu-akun" role="menu" hidden></div>
+        </div>
+      </div>
+    </div>
+    <nav class="nav-hp" aria-label="Menu utama (HP)">
+      <a href="#/" data-nav="beranda"><span data-ikon="search"></span>Cari</a>
+      <a href="#/kategori" data-nav="kategori"><span data-ikon="grid"></span>Kategori</a>
+      <a href="#/terbaru" data-nav="terbaru"><span data-ikon="clock"></span>Terbaru</a>
+      <a href="#/panduan" data-nav="panduan"><span data-ikon="book"></span>Panduan</a>
+      <a class="nav-ext" id="tautan-peta-hp" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder</a>
+    </nav>
+  </header>
+
+  <main id="utama" tabindex="-1">
+    <!-- BERANDA + HASIL CARI -->
+    <div id="v-beranda" class="tampilan">
+      <section class="pencarian">
+        <div class="bungkus">
+          <h1 class="pencarian-judul" id="judul-cari">Satu pintu untuk semua berkas kantor.</h1>
+          <form class="kotak-cari" id="form-cari" role="search" autocomplete="off">
+            <label for="q" class="sr">Cari berkas atau folder</label>
+            <span class="kotak-cari-ikon" data-ikon="search" aria-hidden="true"></span>
+            <input id="q" type="search" enterkeyhint="search" placeholder="Ketik nama berkas, kegiatan, tim, atau tahun…" spellcheck="false">
+            <kbd class="kbd-garis" aria-hidden="true">/</kbd>
+            <button class="kotak-cari-hapus" id="hapus-q" type="button" aria-label="Hapus kata kunci" hidden></button>
+          </form>
+          <div class="saring" id="saring">
+            <div class="chips" id="chips-jenis" role="group" aria-label="Jenis berkas"></div>
+            <div class="saring-pilih">
+              <label class="sr" for="saring-waktu">Waktu diubah</label>
+              <select id="saring-waktu">
+                <option value="">Kapan saja</option>
+                <option value="7">7 hari terakhir</option>
+                <option value="30">30 hari terakhir</option>
+                <option value="90">3 bulan terakhir</option>
+                <option value="365">Setahun terakhir</option>
+              </select>
+              <label class="sr" for="saring-kat">Kategori</label>
+              <select id="saring-kat"><option value="">Semua kategori</option></select>
+            </div>
+          </div>
+          <p class="status-indeks" id="status-indeks"></p>
+        </div>
+      </section>
+
+      <section class="bungkus hasil" id="hasil" hidden aria-live="polite">
+        <div class="hasil-kepala">
+          <p class="hasil-jumlah" id="hasil-jumlah"></p>
+          <div class="hasil-urut" role="group" aria-label="Urutkan hasil">
+            <button type="button" data-urut="cocok" aria-pressed="true">Paling cocok</button>
+            <button type="button" data-urut="baru" aria-pressed="false">Terbaru</button>
+          </div>
+        </div>
+        <ul class="daftar" id="daftar-hasil"></ul>
+        <div class="daftar-lagi"><button class="tombol hantu" id="tombol-lagi" type="button" hidden></button></div>
+        <div class="isi-dok" id="isi-dok"></div>
+      </section>
+
+      <div class="bungkus beranda-isi" id="beranda-isi">
+        <section class="bagian" id="bagian-pintasan" hidden>
+          <div class="bagian-kepala"><h2>Pintasan</h2><div class="bagian-aksi" id="aksi-pintasan"></div></div>
+          <div class="pintasan" id="pintasan"></div>
+        </section>
+        <section class="bagian">
+          <div class="bagian-kepala"><h2>Kategori tim &amp; fungsi</h2><div class="bagian-aksi" id="aksi-kategori-beranda"></div></div>
+          <div class="grid-kategori" id="kategori-beranda"></div>
+        </section>
+        <section class="bagian">
+          <div class="bagian-kepala"><h2>Baru diubah</h2><a class="tautan-panah" href="#/terbaru">Lihat semua<span data-ikon="arrow"></span></a></div>
+          <ul class="daftar ringkas" id="terbaru-beranda"></ul>
+        </section>
+      </div>
+    </div>
+
+    <div id="v-kategori" class="tampilan" hidden></div>
+    <div id="v-kategori-semua" class="tampilan" hidden></div>
+    <div id="v-folder" class="tampilan" hidden></div>
+    <div id="v-terbaru" class="tampilan" hidden></div>
+
+    <!-- PANDUAN -->
+    <div id="v-panduan" class="tampilan" hidden>
+      <section class="kepala-halaman"><div class="bungkus">
+        <p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Panduan</p>
+        <h1>Panduan PINTU</h1>
+        <p class="kepala-sub">Cara mencari, membuka, dan merapikan berkas kantor lewat PINTU Kukar.</p>
+      </div></section>
+      <div class="bungkus panduan">
+        <nav class="panduan-isi" aria-label="Daftar isi panduan">
+          <p>Daftar isi</p>
+          <a href="#pd-apa">Apa itu PINTU?</a>
+          <a href="#pd-cari">Mencari berkas</a>
+          <a href="#pd-isi">Mencari di isi dokumen</a>
+          <a href="#pd-buka">Membuka &amp; membagikan</a>
+          <a href="#pd-folder">Menjelajah folder</a>
+          <a href="#pd-kategori">Kategori tim</a>
+          <a href="#pd-terbaru">Berkas terbaru</a>
+          <a href="#pd-kelola">Untuk pengelola</a>
+          <a href="#pd-admin">Untuk admin</a>
+          <a href="#pd-hp">Pasang di HP</a>
+          <a href="#pd-tanya">Tanya jawab</a>
+        </nav>
+        <article class="panduan-teks">
+          <section id="pd-apa">
+            <h2>Apa itu PINTU?</h2>
+            <p>PINTU (Pencarian Internal Terpadu) adalah mesin pencari berkas Google Drive BPS Kabupaten Kutai Kartanegara. Nama semua berkas dan folder di Drive kantor didaftar otomatis dan diperbarui setiap 15 menit. Karena daftar itu tersimpan di perangkat Anda, hasil pencarian muncul saat Anda mengetik.</p>
+            <p>Di baris menu ada juga <b>Peta Finder</b>. Menu itu membuka Peta Finder Kukar di tab baru, terpisah dari PINTU, jadi pencarian Anda di PINTU tidak hilang.</p>
+            <p>PINTU tidak memindahkan atau mengubah berkas. Berkas tetap di Google Drive, dan izin membukanya tetap mengikuti pengaturan berbagi di Drive.</p>
+          </section>
+          <section id="pd-cari">
+            <h2>Mencari berkas</h2>
+            <ol>
+              <li>Ketik sebagian nama di kotak pencarian, misalnya <i>susenas maret</i>, <i>sk tim</i>, atau <i>2025</i>. Di laptop, tekan <kbd>/</kbd> untuk langsung mengetik.</li>
+              <li>Urutan kata bebas, dan cukup awal kata saja: <i>lap sak</i> menemukan <i>Laporan Sakernas</i>.</li>
+              <li>Nama folder ikut dibaca. Berkas di dalam folder <i>Susenas 2026</i> tetap muncul saat mencari <i>susenas</i>, walau namanya tidak memuat kata itu.</li>
+              <li>Persempit dengan tombol jenis (Folder, PDF, Spreadsheet, …), waktu diubah, atau kategori tim.</li>
+              <li>Pakai tombol panah untuk memilih hasil, lalu <kbd>Enter</kbd> untuk membuka.</li>
+            </ol>
+          </section>
+          <section id="pd-isi">
+            <h2>Mencari di isi dokumen</h2>
+            <p>Kalau yang Anda ingat hanya isinya, klik <b>Cari di isi dokumen</b> di bawah hasil pencarian. PINTU meminta Google Drive mencari kata itu di dalam Docs, Sheets, Slides, PDF, dan berkas Office. Hasilnya muncul beberapa detik kemudian. Tulis frasa di antara tanda kutip, misalnya <i>"inflasi tahunan"</i>, untuk mencari kalimat yang persis.</p>
+          </section>
+          <section id="pd-buka">
+            <h2>Membuka &amp; membagikan</h2>
+            <ul>
+              <li>Klik nama berkas untuk membukanya di Google Drive (tab baru). Klik nama folder untuk menjelajah isinya di PINTU.</li>
+              <li>Ikon <b>salin</b> menyalin link berkas untuk dikirim ke rekan. Rekan tetap butuh izin Drive untuk membukanya.</li>
+              <li>Ikon <b>folder</b> membuka folder tempat berkas itu disimpan.</li>
+              <li>Tidak bisa membuka berkas? Periksa akun Google yang aktif di browser, atau minta akses lewat Google Drive.</li>
+            </ul>
+          </section>
+          <section id="pd-folder">
+            <h2>Menjelajah folder</h2>
+            <p>Klik folder mana pun (di hasil pencarian, jalur berkas, atau kategori) untuk melihat isinya: folder dulu, lalu berkas. Kotak <b>Saring isi folder</b> mencari di folder itu dan semua subfoldernya. Jejak di atas halaman membawa Anda naik ke folder induk.</p>
+          </section>
+          <section id="pd-kategori">
+            <h2>Kategori tim</h2>
+            <p>Kategori mengelompokkan berkas per tim atau fungsi, misalnya Statistik Sosial atau Umum. Setiap kategori bisa punya folder Drive dan <b>link tujuan</b> (pintasan ke folder atau berkas yang paling sering dipakai). Memilih kategori di saringan pencarian membatasi hasil ke folder kategori itu.</p>
+          </section>
+          <section id="pd-terbaru">
+            <h2>Berkas terbaru</h2>
+            <p>Menu <b>Terbaru</b> menampilkan berkas yang baru diubah atau baru ditambahkan, dikelompokkan per hari. Saring per rentang waktu, jenis, atau kategori.</p>
+          </section>
+          <section id="pd-kelola">
+            <h2>Untuk pengelola</h2>
+            <p>Akun berperan <b>pengelola</b> atau <b>admin</b> punya tombol <b>Kelola</b> (ikon pensil) di kanan atas. Saat Kelola aktif:</p>
+            <ul>
+              <li><b>Kategori:</b> tambah lewat <b>+ Kategori</b>, ubah atau hapus lewat ikon pensil di kartunya. Isi nama, ikon, warna, deskripsi, link folder Drive, dan daftar link tujuan. Panah di kartu mengatur urutan. Kategori yang terhapus bisa dipulihkan dari <b>Riwayat → Sampah</b> selama 30 hari.</li>
+              <li><b>Label &amp; kata kunci:</b> klik ikon label di baris berkas. Kata kunci membuat berkas mudah ditemukan dengan istilah lain (misalnya singkatan), label tampil sebagai penanda, dan catatan memberi penjelasan singkat.</li>
+              <li><b>Pintasan beranda:</b> klik <b>Ubah pintasan</b> untuk link yang sering dipakai semua pegawai.</li>
+            </ul>
+          </section>
+          <section id="pd-admin">
+            <h2>Untuk admin</h2>
+            <ul>
+              <li><b>Akun pegawai</b> (menu akun → Akun pegawai): tambah akun dengan nama, email/ID, peran, dan kata sandi awal. Pegawai bisa mengganti sandinya sendiri. Lupa sandi → atur ulang di sini. Nonaktifkan akun pegawai yang pindah tugas.</li>
+              <li><b>Pengaturan</b>: pilih apakah berkas yang dibagikan ke akun kantor ikut dicari, dan tempel link folder yang <b>tidak boleh</b> ikut dicari (misalnya folder kepegawaian). Di sini juga ada status daftar berkas serta tombol <b>Perbarui sekarang</b> dan <b>Daftar ulang semua</b>.</li>
+              <li>Daftar berkas diperbarui otomatis setiap 15 menit dan didaftar ulang penuh setiap malam.</li>
+            </ul>
+          </section>
+          <section id="pd-hp">
+            <h2>Pasang di HP</h2>
+            <p>Android: buka PINTU di Chrome → menu <b>⋮</b> → <b>Instal aplikasi</b>. iPhone: buka di Safari → <b>Bagikan</b> → <b>Tambah ke Layar Utama</b>. Link yang dibuka dari WhatsApp perlu dibuka dulu di Chrome atau Safari.</p>
+          </section>
+          <section id="pd-tanya">
+            <h2>Tanya jawab</h2>
+            <details><summary>Berkas yang baru saya unggah belum muncul.</summary><p>Daftar berkas diperbarui setiap 15 menit. Untuk mengambilnya sekarang, klik <b>Perbarui</b> di baris status di bawah kotak pencarian.</p></details>
+            <details><summary>Berkas ada di Drive, tapi tidak pernah muncul di PINTU.</summary><p>PINTU hanya melihat berkas yang bisa dibuka oleh akun Google kantor. Minta pemilik berkas membagikannya ke akun kantor, atau pindahkan ke folder Drive kantor. Folder yang sengaja diabaikan admin juga tidak muncul.</p></details>
+            <details><summary>Saya lupa kata sandi.</summary><p>Hubungi admin PINTU. Admin bisa mengatur ulang sandi Anda lewat menu Akun pegawai.</p></details>
+            <details><summary>Apakah orang luar bisa melihat daftar berkas?</summary><p>Tidak. Daftar berkas hanya dikirim ke pegawai yang sudah masuk, dan akun diperiksa di server. Saat Anda keluar, daftar yang tersimpan di perangkat ikut dihapus.</p></details>
+          </section>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="kaki">
+    <div class="bungkus kaki-baris">
+      <p><strong>PINTU Kukar</strong> · Pencarian Internal Terpadu · <span id="kaki-kantor">BPS Kabupaten Kutai Kartanegara</span></p>
+      <p class="kaki-tautan"><a id="tautan-pintar" href="https://bpskukar.github.io/" target="_blank" rel="noopener">PINTAR Kukar (layanan publik)</a><a id="tautan-peta-kaki" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener">Peta Finder Kukar</a><a href="#/panduan">Panduan</a><a href="#" data-aksi="pasang">Pasang di HP</a></p>
+    </div>
+  </footer>
+
+  <dialog class="dlg" id="dlg" aria-label="Jendela"></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/cari.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
