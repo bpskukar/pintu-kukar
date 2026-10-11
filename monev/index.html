@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monev Kegiatan · PINTU Kukar</title>
+<meta name="description" content="Monitoring dan evaluasi kegiatan BPS Kabupaten Kutai Kartanegara.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0F3B6E">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="monev.css">
+<script>
+  (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
+</script>
+</head>
+<body>
+<a class="lompat" href="#utama">Langsung ke isi</a>
+<header class="kepala">
+  <div class="bungkus kepala-baris">
+    <a class="merek" href="../#/" aria-label="PINTU Kukar, beranda">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" class="logo-dasar"/><path d="M13.5 38V19a10.5 10.5 0 0 1 21 0v19" class="logo-pintu"/><path d="M9 38h30" class="logo-pintu"/><circle cx="23" cy="24" r="5" class="logo-kaca"/><path d="m26.8 27.8 4.2 4.2" class="logo-kaca"/></svg>
+      <span class="merek-teks"><strong>PINTU <em>Kukar</em></strong><small>Monitoring &amp; Evaluasi</small></span>
+    </a>
+    <nav class="nav" aria-label="Menu utama">
+      <a href="../#/">Cari</a>
+      <a href="../#/kategori">Kategori</a>
+      <a href="./" class="aktif" aria-current="page">Monev</a>
+      <a href="../#/panduan">Panduan</a>
+    </nav>
+    <div class="kepala-aksi">
+      <button class="tombol-ikon" id="tombol-tema" type="button" aria-label="Ganti tema terang/gelap"></button>
+      <span class="akun-chip" id="akun"></span>
+    </div>
+  </div>
+  <nav class="nav-hp" aria-label="Menu utama (HP)">
+    <a href="../#/"><span data-ikon="search"></span>Cari</a>
+    <a href="./" class="aktif"><span data-ikon="chart"></span>Monev</a>
+    <a href="../#/panduan"><span data-ikon="book"></span>Panduan</a>
+  </nav>
+</header>
+
+<main id="utama" tabindex="-1">
+  <section class="kepala-halaman"><div class="bungkus">
+    <p class="jejak"><a href="../#/">PINTU</a><span aria-hidden="true">/</span>Monev</p>
+    <h1>Monev Kegiatan</h1>
+    <p class="kepala-sub">Pantau progres tiap kegiatan per pegawai. Data diambil langsung dari spreadsheet kegiatan, jadi angkanya ikut berubah saat tindak lanjut diisi.</p>
+  </div></section>
+  <div class="bungkus isi-monev">
+    <section>
+      <div class="bagian-kepala"><h2>Kegiatan</h2></div>
+      <div class="grid-kategori" id="daftar-kegiatan"></div>
+    </section>
+    <section class="kotak-info" id="info-masuk" hidden>
+      <span data-ikon="lock"></span>
+      <div>
+        <h3>Masuk dengan akun PINTU</h3>
+        <p>Halaman monev memakai akun PINTU yang sama. Masuk dulu di PINTU, lalu buka menu <b>Monev</b>.</p>
+        <div class="aksi"><a class="tombol" href="../#/">Masuk di PINTU</a></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="kaki">
+  <div class="bungkus kaki-baris">
+    <p><strong>PINTU Kukar</strong> · Monitoring &amp; Evaluasi · BPS Kabupaten Kutai Kartanegara</p>
+    <p class="kaki-tautan"><a href="../#/">PINTU (cari berkas)</a><a data-pintar href="https://bpskukar.github.io/" target="_blank" rel="noopener">PINTAR Kukar (layanan publik)</a><a data-peta href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener">Peta Finder Kukar</a></p>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="../assets/js/config.js"></script>
+<script src="config.js"></script>
+<script src="monev.js"></script>
+<script>
+  (function () {
+    var M = window.Monev, KF = window.MONEV_KONFIG || { kegiatan: [] };
+    M.siapkanKepala();
+    M.$("#daftar-kegiatan").innerHTML = KF.kegiatan.map(function (k) {
+      return '<a class="kartu-kat" style="--c:' + M.esc(k.warna || "#1C5AA3") + '" href="' + M.esc(k.url) + '">' +
+        '<span class="kat-ikon">' + M.ic(k.ikon || "clipboard") + '</span>' +
+        '<span><h3>' + M.esc(k.judul) + '</h3><p>' + M.esc(k.ket || "") + '</p>' +
+        (k.status ? '<span class="status-keg">' + M.esc(k.status) + '</span>' : '') + '</span></a>';
+    }).join("");
+    M.$("#info-masuk").hidden = !!M.sesi();
+  })();
+</script>
+</body>
+</html>

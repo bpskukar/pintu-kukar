@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monev Cleaning SE2026 · PINTU Kukar</title>
+<meta name="description" content="Progres cleaning data anomali SE2026 (verifikasi 1–10) per pegawai BPS Kabupaten Kutai Kartanegara.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0F3B6E">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="monev.css">
+<script>
+  (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
+</script>
+</head>
+<body>
+<a class="lompat" href="#utama">Langsung ke isi</a>
+<header class="kepala">
+  <div class="bungkus kepala-baris">
+    <a class="merek" href="../#/" aria-label="PINTU Kukar, beranda">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" class="logo-dasar"/><path d="M13.5 38V19a10.5 10.5 0 0 1 21 0v19" class="logo-pintu"/><path d="M9 38h30" class="logo-pintu"/><circle cx="23" cy="24" r="5" class="logo-kaca"/><path d="m26.8 27.8 4.2 4.2" class="logo-kaca"/></svg>
+      <span class="merek-teks"><strong>PINTU <em>Kukar</em></strong><small>Monitoring &amp; Evaluasi</small></span>
+    </a>
+    <nav class="nav" aria-label="Menu utama">
+      <a href="../#/">Cari</a>
+      <a href="../#/kategori">Kategori</a>
+      <a href="./" class="aktif">Monev</a>
+      <a href="../#/panduan">Panduan</a>
+    </nav>
+    <div class="kepala-aksi">
+      <button class="tombol-ikon" id="tombol-tema" type="button" aria-label="Ganti tema terang/gelap"></button>
+      <span class="akun-chip" id="akun"></span>
+    </div>
+  </div>
+  <nav class="nav-hp" aria-label="Menu utama (HP)">
+    <a href="../#/"><span data-ikon="search"></span>Cari</a>
+    <a href="./" class="aktif"><span data-ikon="chart"></span>Monev</a>
+    <a href="../#/panduan"><span data-ikon="book"></span>Panduan</a>
+  </nav>
+</header>
+
+<main id="utama" tabindex="-1">
+  <section class="kepala-halaman"><div class="bungkus">
+    <p class="jejak"><a href="../#/">PINTU</a><span aria-hidden="true">/</span><a href="./">Monev</a><span aria-hidden="true">/</span>Cleaning SE2026</p>
+    <h1>Monitoring Cleaning Data Anomali SE2026</h1>
+    <p class="kepala-sub">Progres tindak lanjut verifikasi 1 sampai 10 per pegawai, mengacu pada kolom <b>Nama Organik yang Ditugaskan</b> di spreadsheet tindak lanjut Kab/Kota. Setiap tugas dihitung <b>sudah dilakukan</b> atau <b>belum dilakukan</b>.</p>
+    <div class="kepala-aksi-hal">
+      <button class="tombol" id="tombol-segar" type="button"><span data-ikon="cycle"></span>Perbarui data</button>
+      <button class="tombol hantu" id="tombol-csv" type="button" disabled><span data-ikon="download"></span>Unduh rekap (CSV)</button>
+      <button class="tombol hantu" id="tombol-cetak" type="button" disabled><span data-ikon="printer"></span>Cetak</button>
+      <button class="tombol hantu" id="tombol-file" type="button"><span data-ikon="upload"></span>Pakai file Excel</button>
+      <input id="input-file" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </div>
+    <p class="sumber-baris" id="sumber" aria-live="polite"></p>
+  </div></section>
+
+  <div class="bungkus isi-monev">
+    <div id="pesan" aria-live="polite"></div>
+
+    <section id="bag-kpi" hidden aria-label="Ringkasan">
+      <div class="kpi" id="kpi"></div>
+    </section>
+
+    <section id="bag-verif" hidden>
+      <div class="bagian-kepala"><h2>Progres per verifikasi</h2><p class="catatan-kecil">Klik kartu untuk melihat rekap pegawai di verifikasi itu.</p></div>
+      <div class="grid-verif" id="grid-verif"></div>
+    </section>
+
+    <section id="bag-rekap" hidden>
+      <div class="bagian-kepala"><h2>Rekap per pegawai</h2><p class="catatan-kecil"><span id="judul-tabel"></span> · <span id="jumlah-tabel"></span></p></div>
+      <div class="chips-verif" id="chips-verif" role="group" aria-label="Pilih verifikasi"></div>
+      <div class="alat-rekap">
+        <label class="kotak-saring"><span data-ikon="search"></span><span class="sr">Cari nama pegawai</span><input id="q" type="search" placeholder="Cari nama pegawai…" autocomplete="off"></label>
+        <label><span class="sr">Urutkan</span>
+          <select class="pilih" id="urut">
+            <option value="pct-asc">Progres terendah dulu</option>
+            <option value="pct-desc">Progres tertinggi dulu</option>
+            <option value="belum">Belum dilakukan terbanyak</option>
+            <option value="tugas">Tugas terbanyak</option>
+            <option value="nama">Nama A–Z</option>
+          </select>
+        </label>
+      </div>
+      <div class="tabel-bungkus"><table class="tabel tabel-rekap" id="tabel-rekap"></table></div>
+    </section>
+
+    <section id="panel-admin" class="kotak-info" hidden>
+      <span data-ikon="gear"></span>
+      <div style="flex:1;min-width:0">
+        <h3>Sumber data (khusus admin)</h3>
+        <div id="admin-isi"></div>
+        <form class="form-sumber" id="form-sumber">
+          <label class="sr" for="input-sumber">Link sumber data</label>
+          <input id="input-sumber" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/… atau https://drive.google.com/drive/folders/…" autocomplete="off">
+          <button class="tombol" id="simpan-sumber" type="submit">Simpan</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="cara">
+      <div class="bagian-kepala"><h2>Cara menghitung</h2></div>
+      <details>
+        <summary>Kapan tugas dihitung "sudah dilakukan"?</summary>
+        <div class="cara-isi">
+          <p>Setiap baris di sheet Verif adalah satu tugas untuk pegawai di kolom <b>Nama Organik yang Ditugaskan</b>. Baris tanpa nama pegawai masuk ke <b>(Belum ditugaskan)</b>.</p>
+          <dl id="cara-aturan"></dl>
+        </div>
+      </details>
+      <details>
+        <summary>Nama pegawai ditulis berbeda-beda di tiap sheet</summary>
+        <div class="cara-isi">
+          <p>Nama panggilan disamakan otomatis dengan nama lengkap bergelar yang ada di spreadsheet, misalnya <i>Tiara</i> → <i>Tiara Ariradana, A.Md.Stat.</i> atau <i>Nugroho Dwi P</i> → <i>Nugroho Dwi Prasetio, SST</i>. Ejaan yang berbeda (mis. <i>Fadila</i>, <i>Fani</i>, <i>Okti</i>) diatur di <code>monev/config.js</code> bagian <code>alias</code>.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Dari mana datanya, dan apakah aman?</summary>
+        <div class="cara-isi">
+          <p>Server PINTU (Apps Script Gmail kantor) membaca spreadsheet tindak lanjut Kab/Kota lalu hanya mengirim <b>jumlah</b> tugas per pegawai. Nama responden, NIK, alamat, dan link assignment tidak pernah dikirim ke browser. Hasil disimpan sementara 10 menit; tombol <b>Perbarui data</b> (pengelola/admin) mengambil ulang saat itu juga.</p>
+          <p><b>Pakai file Excel</b> membaca file di perangkat Anda sendiri. File tidak diunggah ke mana pun.</p>
+        </div>
+      </details>
+    </section>
+  </div>
+</main>
+
+<footer class="kaki">
+  <div class="bungkus kaki-baris">
+    <p><strong>PINTU Kukar</strong> · Monitoring &amp; Evaluasi · BPS Kabupaten Kutai Kartanegara</p>
+    <p class="kaki-tautan"><a href="./">Semua kegiatan monev</a><a href="../#/">PINTU (cari berkas)</a><a data-peta href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener">Peta Finder Kukar</a></p>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="../assets/js/config.js"></script>
+<script src="config.js"></script>
+<script src="monev.js"></script>
+<script src="cleaning.js"></script>
+</body>
+</html>

@@ -157,6 +157,8 @@ function doPost(e) {
       case 'cariIsi': return json_(cariIsi_(b.q));
       case 'gantiSandi': return json_(gantiSandi_(u, b));
       case 'perbarui': return json_(perbaruiDariWeb_(u));
+      case 'monev': return json_(monev_(u, b));            // Monev.gs
+      case 'monevAtur': return json_(monevAtur_(u, b));    // Monev.gs (admin)
     }
     wajibPeran_(u, 'pengelola');
     if (b.aksi === 'riwayat') return json_(bacaRiwayat_(u));

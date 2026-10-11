@@ -20,6 +20,7 @@ browser, jadi hasil muncul saat pegawai mengetik.
 | Akun pegawai | Login diperiksa di server. Tiga peran: pengguna, pengelola, admin. Admin mengelola akun dari website. |
 | Otomatis | Daftar berkas diperbarui setiap 15 menit dan didaftar ulang penuh setiap malam pukul 02.00 WITA. |
 | Pasang di HP | Bisa dipasang seperti aplikasi (PWA). |
+| Monev kegiatan | Menu **Monev** (`/monev/`): monitoring & evaluasi kegiatan per pegawai. Kegiatan pertama: *Cleaning Data Anomali SE2026* (progres verifikasi 1–10). |
 
 ## Cara kerja singkat
 
@@ -56,6 +57,18 @@ Website hanya mengunduh **perubahan** sejak kunjungan terakhir, bukan daftar len
 2. Menu akun (kanan atas) → **Akun pegawai** → **Tambah akun** untuk setiap pegawai (nama, email/ID, peran, kata sandi awal).
 3. Menu akun → **Pengaturan & daftar berkas** → tempel link folder yang **tidak boleh** ikut dicari (misalnya kepegawaian).
 
+### 4. Monev (monitoring & evaluasi kegiatan)
+1. Editor Apps Script → **+** di samping *Berkas* → **Skrip** → beri nama `Monev` → tempel isi `apps-script/Monev.gs` → **Simpan**.
+2. Tempel juga `apps-script/Kode.gs` terbaru (ada 2 baris tambahan `monev` di `doPost`) → **Simpan**.
+3. **Terapkan → Kelola deployment → ikon pensil → Versi: Versi baru → Terapkan**.
+4. Masuk PINTU sebagai **admin** → menu **Monev** → *Cleaning Data Anomali SE2026* → panel **Sumber data** → tempel link spreadsheet/folder tindak lanjut (boleh `s.bps.go.id/tindaklanjutse64`) → **Simpan**.
+   Gmail kantor harus bisa membuka berkas itu (minimal *Lihat*). Berkas Excel (.xlsx) dibaca lewat salinan Google Sheets di folder sistem.
+5. Selesai. Pegawai cukup masuk PINTU lalu klik **Monev**. Angka di-cache 10 menit; pengelola/admin bisa klik **Perbarui data**.
+
+Tanpa langkah 1–4 halaman tetap bisa dipakai lewat tombol **Pakai file Excel** (file diolah di browser, tidak diunggah).
+
+Menambah kegiatan monev baru: tambah entri di `monev/config.js` (`kegiatan`), salin `monev/cleaning-se2026.html` sebagai halaman baru, dan daftarkan kegiatannya di `MONEV` pada `Monev.gs`.
+
 ## Memperbarui
 - **Website:** ganti file di GitHub → *Commit changes* → tunggu build hijau → buka PINTU dengan `Ctrl/Cmd + Shift + R`.
 - **Apps Script:** tempel `Kode.gs` baru → Simpan → **Terapkan → Kelola deployment → ikon pensil → Versi: Versi baru → Terapkan**.
@@ -82,5 +95,10 @@ assets/js/config.js     alamat Apps Script & nama kantor  ← diisi saat pemasan
 assets/js/cari.js       mesin pencari di browser
 assets/js/app.js        aplikasi
 sw.js, manifest.webmanifest, assets/img/   aplikasi terpasang (PWA)
+monev/index.html        daftar kegiatan monev
+monev/cleaning-se2026.html + cleaning.js   monitoring cleaning data anomali SE2026
+monev/config.js         daftar kegiatan, judul verifikasi, alias nama pegawai
+monev/monev.js, monev.css   fungsi & gaya bersama halaman monev
+apps-script/Monev.gs    backend monev (membaca spreadsheet kegiatan, kirim rekap jumlah saja)
 apps-script/Kode.gs     backend Google Apps Script
 ```
