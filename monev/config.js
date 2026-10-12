@@ -57,6 +57,8 @@ window.MONEV_KONFIG = {
       "fani": "Fania Pratiwi, SST",
       "okti": "Oktia Shafira, A.Md.Stat."
     },
-    kosong: "(Belum ditugaskan)"
+    kosong: "(Belum ditugaskan)",
+    /* halaman yang sedang dibuka memeriksa data baru tiap sekian detik (minimal 30) */
+    pantauDetik: 120
   }
 };

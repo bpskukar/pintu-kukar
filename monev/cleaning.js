@@ -12,8 +12,9 @@
   var POLA = new RegExp(KF.polaSheet || "^verif\\s*\\d", "i");
   var KOSONG = KF.kosong || "(Belum ditugaskan)";
   var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  var PANTAU_DETIK = Math.max(30, +KF.pantauDetik || 120);   // halaman memeriksa data baru tiap sekian detik
 
-  var S = { mentah: null, olah: null, pilih: "semua", q: "", urut: "pct-asc", admin: false, lokal: false };
+  var S = { mentah: null, olah: null, pilih: "semua", q: "", urut: "pct-asc", admin: false, lokal: false, terakhir: 0, sibuk: false };
 
   /* ---------------------------------------------------------------
      HITUNG DARI BARIS (sama dengan hitungSheetMonev_ di Monev.gs)
@@ -187,8 +188,11 @@
     el.innerHTML = '<span><span class="titik' + (S.lokal ? " lokal" : "") + '"></span><b>' + (S.lokal ? "File di perangkat ini" : "Spreadsheet tindak lanjut") + "</b></span>" +
       "<span>" + esc((d.sumber || {}).nama || "") + "</span>" +
       ((d.sumber || {}).diubah ? "<span>diubah " + esc(tglIndo(d.sumber.diubah)) + "</span>" : "") +
-      (d.diambil ? "<span>dibaca " + esc(tglIndo(d.diambil)) + (d.dariCache ? " (cache, diperbarui tiap 10 menit)" : "") + "</span>" : "");
+      (d.diambil ? "<span>rekap dihitung " + esc(tglIndo(d.diambil)) + "</span>" : "") +
+      (S.lokal ? "" : "<span>pantau otomatis tiap " + (PANTAU_DETIK >= 60 ? Math.round(PANTAU_DETIK / 60) + " menit" : PANTAU_DETIK + " detik") + (S.terakhir ? " · terakhir dicek " + esc(jamMenit(S.terakhir)) : "") + "</span>");
   }
+
+  function jamMenit(ms) { var d = new Date(ms), p = function (n) { return n < 10 ? "0" + n : n; }; return p(d.getHours()) + "." + p(d.getMinutes()); }
 
   function renderKpi() {
     var o = S.olah, nPeg = Object.keys(o.peg).filter(function (n) { return n !== KOSONG; }).length;
@@ -317,33 +321,44 @@
   }
 
   /* ---------------- muat data ---------------- */
-  function muatServer(segar) {
+  function muatServer(segar, diam) {
     var sesi = M.sesi();
+    if (S.sibuk) return Promise.resolve();
     if (!sesi) {
       pesan("", "lock", "Masuk dengan akun PINTU", "<p>Data monev hanya untuk pegawai BPS Kukar. Masuk dulu di PINTU, lalu buka menu <b>Monev</b> lagi.</p><p>Bisa juga memakai file Excel tindak lanjut (diolah di perangkat ini saja, tidak diunggah).</p>", AKSI_MASUK + AKSI_FILE);
       return Promise.resolve();
     }
+    S.sibuk = true;
     $("#tombol-segar").disabled = true;
     if (!S.mentah) $("#pesan").innerHTML = '<p class="muat-baris"><span class="putar" aria-hidden="true"></span>Mengambil data dari spreadsheet tindak lanjut…</p>';
     var pr = sesi.peran === "pengelola" || sesi.peran === "admin";
     return M.panggil("monev", { kegiatan: KEG, segar: !!(segar && pr) }).then(function (res) {
       S.admin = !!res.admin;
+      S.terakhir = Date.now();
       if (!res.siap) {
         S.mentah = null;
         pesan("peringatan", "gear", "Sumber data belum diatur", S.admin ? "<p>Tempel link sumber data di panel <b>Sumber data</b> di bawah.</p>" : "<p>Admin PINTU perlu menempel link spreadsheet tindak lanjut di halaman ini. Sementara itu, gunakan file Excel.</p>", S.admin ? "" : AKSI_FILE);
         renderAdmin(false);
         return;
       }
+      var berubah = !S.mentah || S.lokal || S.mentah.diambil !== res.diambil || (S.mentah.sumber || {}).diubah !== (res.sumber || {}).diubah;
       S.mentah = res; S.lokal = false;
       $("#pesan").innerHTML = "";
-      renderSemua(); renderAdmin(true);
+      if (berubah || !S.olah) { renderSemua(); renderAdmin(true); } else renderSumber();
       if (segar) M.toast("Data diperbarui");
+      else if (diam && berubah) M.toast("Ada perubahan di spreadsheet, rekap diperbarui", "cycle");
     }).catch(function (err) {
       if (err.kode === "sesi") pesan("peringatan", "lock", "Sesi PINTU berakhir", "<p>" + esc(err.message) + "</p>", AKSI_MASUK + AKSI_FILE);
       else if (err.kode === "belum-monev") pesan("peringatan", "gear", "Server PINTU belum memasang modul Monev", "<p>Admin perlu menambahkan <b>Monev.gs</b> ke Apps Script PINTU lalu menerbitkan versi baru (lihat README bagian Monev). Sementara itu, gunakan file Excel.</p>", AKSI_FILE);
-      else if (S.mentah) M.toast(err.message, "alert");
+      else if (S.mentah) { if (!diam) M.toast(err.message, "alert"); }
       else pesan("bahaya", "alert", "Data belum bisa diambil", "<p>" + esc(err.message) + "</p>", '<button class="tombol" type="button" data-aksi="ulang">' + ic("cycle") + "Coba lagi</button>" + AKSI_FILE);
-    }).then(function () { $("#tombol-segar").disabled = false; });
+    }).then(function () { S.sibuk = false; $("#tombol-segar").disabled = false; });
+  }
+
+  /* pantau otomatis: ambil rekap terbaru selama halaman terbuka (server hanya menghitung ulang bila spreadsheet berubah) */
+  function pantau() {
+    if (document.hidden || S.lokal || !S.mentah || !M.sesi()) return;
+    if (Date.now() - S.terakhir >= PANTAU_DETIK * 1000 - 500) muatServer(false, true);
   }
 
   var xlsxSiap = null;
@@ -434,6 +449,8 @@
     drop.addEventListener("dragover", function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") > -1) e.preventDefault(); });
     drop.addEventListener("drop", function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f && /\.xlsx?$/i.test(f.name)) { e.preventDefault(); bacaFile(f); } });
     muatServer(false);
+    setInterval(pantau, Math.min(PANTAU_DETIK, 60) * 1000);
+    document.addEventListener("visibilitychange", pantau);
   }
 
   window.MonevCleaning = { hitungSheet: hitungSheet, olah: olah, buatPemeta: buatPemeta };

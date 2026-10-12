@@ -23,12 +23,14 @@
   <div class="bungkus kepala-baris">
     <a class="merek" href="../#/" aria-label="PINTU Kukar, beranda">
       <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" class="logo-dasar"/><path d="M13.5 38V19a10.5 10.5 0 0 1 21 0v19" class="logo-pintu"/><path d="M9 38h30" class="logo-pintu"/><circle cx="23" cy="24" r="5" class="logo-kaca"/><path d="m26.8 27.8 4.2 4.2" class="logo-kaca"/></svg>
-      <span class="merek-teks"><strong>PINTU <em>Kukar</em></strong><small>Monitoring &amp; Evaluasi</small></span>
+      <span class="merek-teks"><strong>PINTU <em>Kukar</em></strong><small>Pencarian Internal Terpadu</small></span>
     </a>
     <nav class="nav" aria-label="Menu utama">
       <a href="../#/">Cari</a>
       <a href="../#/kategori">Kategori</a>
-      <a href="./" class="aktif">Monev</a>
+      <a href="../#/terbaru">Terbaru</a>
+      <a href="./" class="aktif" aria-current="page">Monev</a>
+      <a class="nav-ext" data-peta href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder<span class="ext-tanda" data-ikon="external"></span></a>
       <a href="../#/panduan">Panduan</a>
     </nav>
     <div class="kepala-aksi">
@@ -38,7 +40,10 @@
   </div>
   <nav class="nav-hp" aria-label="Menu utama (HP)">
     <a href="../#/"><span data-ikon="search"></span>Cari</a>
-    <a href="./" class="aktif"><span data-ikon="chart"></span>Monev</a>
+    <a href="../#/kategori"><span data-ikon="grid"></span>Kategori</a>
+    <a href="../#/terbaru"><span data-ikon="clock"></span>Terbaru</a>
+    <a href="./" class="aktif" aria-current="page"><span data-ikon="chart"></span>Monev</a>
+    <a class="nav-ext" data-peta href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder</a>
     <a href="../#/panduan"><span data-ikon="book"></span>Panduan</a>
   </nav>
 </header>
@@ -119,7 +124,7 @@
       <details>
         <summary>Dari mana datanya, dan apakah aman?</summary>
         <div class="cara-isi">
-          <p>Server PINTU (Apps Script Gmail kantor) membaca spreadsheet tindak lanjut Kab/Kota lalu hanya mengirim <b>jumlah</b> tugas per pegawai. Nama responden, NIK, alamat, dan link assignment tidak pernah dikirim ke browser. Hasil disimpan sementara 10 menit; tombol <b>Perbarui data</b> (pengelola/admin) mengambil ulang saat itu juga.</p>
+          <p>Server PINTU (Apps Script Gmail kantor) membaca spreadsheet tindak lanjut Kab/Kota lalu hanya mengirim <b>jumlah</b> tugas per pegawai. Nama responden, NIK, alamat, dan link assignment tidak pernah dikirim ke browser. Rekap ikut berubah sendiri: selama halaman terbuka, setiap ±2 menit server memeriksa apakah spreadsheet sudah diubah, dan bila ya rekap dihitung ulang. Tombol <b>Perbarui data</b> (pengelola/admin) menghitung ulang saat itu juga.</p>
           <p><b>Pakai file Excel</b> membaca file di perangkat Anda sendiri. File tidak diunggah ke mana pun.</p>
         </div>
       </details>
