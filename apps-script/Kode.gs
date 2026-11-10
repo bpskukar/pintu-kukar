@@ -30,7 +30,7 @@
    - Folder sistem PINTU dan spreadsheet database tidak ikut dicari.
    ===================================================================== */
 
-var VERSI = 1;
+var VERSI = 2;
 var NAMA_APLIKASI = 'PINTU Kukar';
 var SITUS_URL = 'https://bpskukar.github.io/pintu-kukar/';
 var BATAS_ITEM = 250000;          // pengaman: jumlah berkas maksimum yang didaftar
@@ -47,7 +47,10 @@ var KOLOM = {
   Label: ['id', 'nama', 'kata', 'label', 'catatan', 'oleh', 'diubah'],
   Pengaturan: ['kunci', 'nilai'],
   Riwayat: ['waktu', 'oleh', 'aksi', 'keterangan'],
-  Sampah: ['sid', 'waktu', 'oleh', 'jenis', 'judul', 'isi']
+  Sampah: ['sid', 'waktu', 'oleh', 'jenis', 'judul', 'isi'],
+  Tim: ['id', 'nama', 'singkat', 'ketua', 'warna', 'urutan', 'aktif'],
+  Rencana: ['id', 'tim', 'bulan', 'kegiatan', 'satuan', 'target', 'catatan', 'urutan', 'oleh', 'diubah'],
+  Monev: ['id', 'rencana', 'tim', 'bulan', 'minggu', 'realisasi', 'kendala', 'status', 'oleh', 'diubah']
 };
 var PERAN = { pengguna: 1, pengelola: 2, admin: 3 };
 var PENGATURAN_AWAL = {
@@ -157,8 +160,12 @@ function doPost(e) {
       case 'cariIsi': return json_(cariIsi_(b.q));
       case 'gantiSandi': return json_(gantiSandi_(u, b));
       case 'perbarui': return json_(perbaruiDariWeb_(u));
-      case 'monev': return json_(monev_(u, b));            // Monev.gs
-      case 'monevAtur': return json_(monevAtur_(u, b));    // Monev.gs (admin)
+      case 'monev': return json_(monevData_(u, b));
+      case 'simpanRencana': return json_(denganKunci_(function () { return simpanRencana_(u, b); }));
+      case 'siapkanRencana': return json_(denganKunci_(function () { return siapkanRencana_(u, b); }));
+      case 'simpanRealisasi': return json_(denganKunci_(function () { return simpanRealisasi_(u, b); }));
+      case 'simpanTim': return json_(denganKunci_(function () { return simpanTim_(u, b); }));
+      case 'hapusTim': return json_(denganKunci_(function () { return hapusTim_(u, b); }));
     }
     wajibPeran_(u, 'pengelola');
     if (b.aksi === 'riwayat') return json_(bacaRiwayat_(u));
@@ -969,6 +976,338 @@ function catatGalat_(e) {
   var t = String(e && e.message || e).slice(0, 300);
   console.error(t);
   try { props_().setProperty('GALAT', sekarang_() + ' · ' + t); } catch (x) { /* abaikan */ }
+}
+
+/* =====================================================================
+   MONEV MINGGUAN TIM KERJA
+   Rencana & target disusun per bulan, realisasinya dicatat tiap minggu
+   oleh ketua tim. Pengelola & admin boleh mengisi untuk semua tim.
+   ===================================================================== */
+var TIM_AWAL = [
+  { id: 'umum', nama: 'Subbagian Umum', singkat: 'Tata naskah, kepegawaian, keuangan, BMN', warna: '#4A5566' },
+  { id: 'sosial', nama: 'Tim Statistik Sosial', singkat: 'Kependudukan, ketenagakerjaan, kesra, ketahanan sosial', warna: '#1C5AA3' },
+  { id: 'distribusi', nama: 'Tim Statistik Distribusi dan Harga', singkat: 'Harga, perdagangan, jasa, transportasi', warna: '#C27C0E' },
+  { id: 'produksi', nama: 'Tim Statistik Produksi', singkat: 'Pertanian, industri, pertambangan, konstruksi', warna: '#2E8B57' },
+  { id: 'neraca', nama: 'Tim Neraca Wilayah dan Analisis Statistik', singkat: 'PDRB, neraca satelit, analisis lintas sektor', warna: '#0E7490' },
+  { id: 'ipds', nama: 'Tim Integrasi Pengolahan dan JKD dan Inovasi', singkat: 'Jaringan, pengolahan, metodologi, inovasi', warna: '#7A3FB0' },
+  { id: 'diseminasi', nama: 'Tim Diseminasi dan Layanan Statistik', singkat: 'PST, publikasi, pembinaan statistik sektoral', warna: '#0F7B6C' },
+  { id: 'sektoral', nama: 'Tim Statistik Sektoral dan Desa Cantik', singkat: 'Desa Cantik, Satu Data Indonesia, EPSS', warna: '#C2410C' },
+  { id: 'rb', nama: 'Tim Reformasi Birokrasi', singkat: 'RB, zona integritas, budaya kerja', warna: '#9D174D' },
+  { id: 'sakip', nama: 'Tim SAKIP', singkat: 'Perencanaan, perjanjian kinerja, laporan kinerja', warna: '#B42318' },
+  { id: 'humas', nama: 'Tim Humas', singkat: 'Dokumentasi, media sosial, siaran pers', warna: '#2A5C9A' },
+  { id: 'se2026', nama: 'Tim Sensus Ekonomi 2026', singkat: 'Persiapan dan pelaksanaan SE2026', warna: '#E5850B' }
+];
+
+/* Contoh rencana rutin per tim — dipakai tombol "Pakai contoh rencana".
+   Angka target hanya titik awal; tiap tim menyesuaikan sendiri. */
+var CONTOH_RENCANA = {
+  umum: [
+    ['Pengadministrasian surat masuk dan surat keluar', 'surat', 60],
+    ['Rekap presensi dan pemenuhan jam kerja pegawai', 'laporan', 4],
+    ['Pertanggungjawaban keuangan (SPB, kuitansi, SPJ)', 'berkas', 20],
+    ['Pemutakhiran data BMN dan persediaan', 'laporan', 1],
+    ['Laporan kinerja bulanan dan tindak lanjutnya', 'laporan', 1],
+    ['Layanan rumah tangga dan operasional kantor', 'kegiatan', 4]
+  ],
+  sosial: [
+    ['Pencacahan survei sosial sesuai jadwal', 'dokumen', 100],
+    ['Pengawasan dan pemeriksaan dokumen lapangan', 'dokumen', 100],
+    ['Entri dan validasi data sosial', 'dokumen', 100],
+    ['Penyusunan publikasi atau indikator sosial', 'publikasi', 1],
+    ['Evaluasi progres lapangan', 'laporan', 4]
+  ],
+  distribusi: [
+    ['Pencacahan harga konsumen', 'dokumen', 8],
+    ['Pemantauan harga produsen dan perdagangan', 'dokumen', 10],
+    ['Survei statistik jasa dan pariwisata', 'dokumen', 20],
+    ['Validasi dan pengiriman data harga tepat waktu', 'laporan', 4],
+    ['Penyusunan laporan atau analisis distribusi', 'laporan', 1]
+  ],
+  produksi: [
+    ['Ubinan dan pengumpulan data tanaman pangan', 'sampel', 10],
+    ['Survei industri besar, sedang, dan mikro kecil', 'dokumen', 15],
+    ['Survei pertambangan, energi, dan konstruksi', 'dokumen', 10],
+    ['Validasi dan pengolahan data produksi', 'dokumen', 30],
+    ['Penyusunan laporan statistik produksi', 'laporan', 1]
+  ],
+  neraca: [
+    ['Pengumpulan data pendukung PDRB', 'tabel', 10],
+    ['Rekonsiliasi dan penyusunan angka PDRB', 'tabel', 5],
+    ['Penyusunan analisis atau kajian statistik', 'kajian', 1],
+    ['Penyiapan bahan publikasi neraca wilayah', 'publikasi', 1]
+  ],
+  ipds: [
+    ['Pemeliharaan jaringan, server, dan perangkat', 'kegiatan', 4],
+    ['Dukungan teknis pengolahan survei dan sensus', 'permintaan', 10],
+    ['Pengelolaan dan pemutakhiran aplikasi atau inovasi', 'aplikasi', 2],
+    ['Pemutakhiran peta dan kerangka sampel wilayah', 'wilayah', 10],
+    ['Pencadangan data dan pemeriksaan keamanan sistem', 'laporan', 4]
+  ],
+  diseminasi: [
+    ['Layanan PST tatap muka dan daring', 'pengunjung', 40],
+    ['Rilis Berita Resmi Statistik', 'rilis', 1],
+    ['Pemutakhiran website dan SIMDASI', 'pemutakhiran', 8],
+    ['Pembinaan statistik sektoral instansi daerah', 'kegiatan', 2],
+    ['Pemenuhan permintaan data dan penjualan publikasi', 'permintaan', 15]
+  ],
+  sektoral: [
+    ['Pembinaan Desa Cinta Statistik', 'kegiatan', 2],
+    ['Pendampingan metadata dan standar data (SDI)', 'instansi', 2],
+    ['Asistensi rekomendasi kegiatan statistik', 'rekomendasi', 2],
+    ['Pemantauan EPSS dan Indeks Pembangunan Statistik', 'laporan', 1]
+  ],
+  rb: [
+    ['Pemenuhan bukti dukung RB dan zona integritas', 'dokumen', 10],
+    ['Monitoring rencana aksi reformasi birokrasi', 'laporan', 1],
+    ['Sosialisasi dan internalisasi budaya kerja', 'kegiatan', 1]
+  ],
+  sakip: [
+    ['Pemutakhiran capaian IKU dan perjanjian kinerja', 'laporan', 1],
+    ['Penyusunan laporan kinerja berkala', 'laporan', 1],
+    ['Monitoring tindak lanjut hasil evaluasi', 'rekomendasi', 3],
+    ['Pemantauan realisasi anggaran terhadap target', 'laporan', 4]
+  ],
+  humas: [
+    ['Peliputan dan dokumentasi kegiatan kantor', 'kegiatan', 8],
+    ['Unggahan konten media sosial', 'konten', 12],
+    ['Penyusunan siaran pers atau berita kegiatan', 'berita', 2],
+    ['Laporan media monitoring dan engagement', 'laporan', 1]
+  ],
+  se2026: [
+    ['Rekrutmen dan pelatihan petugas', 'kegiatan', 2],
+    ['Pemutakhiran muatan wilayah kerja', 'blok sensus', 20],
+    ['Monitoring progres pendataan lapangan', 'laporan', 4],
+    ['Pengolahan dan pemeriksaan dokumen', 'dokumen', 100],
+    ['Diseminasi hasil dan publikasi', 'kegiatan', 1]
+  ]
+};
+var CONTOH_UMUM = [
+  ['Pelaksanaan kegiatan rutin tim', 'kegiatan', 4],
+  ['Penyusunan laporan berkala', 'laporan', 1],
+  ['Tugas kedinasan lain dari pimpinan', 'kegiatan', 2]
+];
+
+function idBaru_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 10); }
+function bulanKini_() { return Utilities.formatDate(new Date(), zona_(), 'yyyy-MM'); }
+function bulanSah_(s) { return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(s || '')) ? String(s) : bulanKini_(); }
+function bulanGeser_(bulan, n) {
+  var y = +bulan.slice(0, 4), m = +bulan.slice(5, 7) - 1 + n;
+  var d = new Date(y, m, 1);
+  return Utilities.formatDate(d, zona_(), 'yyyy-MM');
+}
+/* Minggu monev memakai blok tanggal: M1 = 1–7, M2 = 8–14, M3 = 15–21,
+   M4 = 22–28, M5 = 29–akhir bulan. Mudah dijelaskan dan selalu 4–5 minggu. */
+function mingguBulan_(bulan) {
+  var y = +bulan.slice(0, 4), m = +bulan.slice(5, 7);
+  var jumlahHari = new Date(y, m, 0).getDate();
+  var maks = Math.ceil(jumlahHari / 7), daftar = [];
+  for (var k = 1; k <= maks; k++) {
+    var awal = (k - 1) * 7 + 1, akhir = Math.min(jumlahHari, k * 7);
+    daftar.push({ n: k, awal: bulan + '-' + ('0' + awal).slice(-2), akhir: bulan + '-' + ('0' + akhir).slice(-2) });
+  }
+  return daftar;
+}
+function mingguKini_(bulan) {
+  if (bulan !== bulanKini_()) return 0;
+  var tgl = +Utilities.formatDate(new Date(), zona_(), 'd');
+  return Math.min(Math.ceil(tgl / 7), mingguBulan_(bulan).length);
+}
+
+function bacaTim_() {
+  var daftar = baca_('Tim');
+  if (!daftar.length) {
+    daftar = TIM_AWAL.map(function (t, i) {
+      return { id: t.id, nama: t.nama, singkat: t.singkat, ketua: '', warna: t.warna, urutan: String(i + 1), aktif: true };
+    });
+    tulis_('Tim', daftar);
+  }
+  return daftar.sort(function (a, b) { return (+a.urutan || 99) - (+b.urutan || 99) || a.nama.localeCompare(b.nama); });
+}
+function cariTim_(daftar, id) {
+  var h = null;
+  daftar.forEach(function (t) { if (t.id === id) h = t; });
+  if (!h) throw new Error('Tim tidak ditemukan.');
+  return h;
+}
+function bolehTim_(u, t) {
+  return !!((peranSah_(u.peran) && PERAN[u.peran] >= PERAN.pengelola) || (t.ketua && rapikanId_(t.ketua) === u.id));
+}
+function wajibTim_(u, t) {
+  if (!bolehTim_(u, t)) {
+    var e = new Error('Hanya ketua ' + t.nama + ' (atau pengelola) yang boleh mengisi monev tim ini.');
+    e.kode = 'peran';
+    throw e;
+  }
+}
+
+function monevData_(u, b) {
+  var bulan = bulanSah_(b && b.bulan);
+  var tim = bacaTim_();
+  var semuaR = baca_('Rencana'), semuaM = baca_('Monev');
+  var namaAkun = {};
+  try { baca_('Akun').forEach(function (a) { namaAkun[a.id] = a.nama; }); } catch (e) { /* abaikan */ }
+  var tren = [];
+  for (var i = 5; i >= 0; i--) {
+    var bl = bulanGeser_(bulan, -i), t = 0, r = 0;
+    semuaR.forEach(function (x) { if (x.bulan === bl) t += (+x.target || 0); });
+    semuaM.forEach(function (x) { if (x.bulan === bl) r += (+x.realisasi || 0); });
+    tren.push({ bulan: bl, target: t, realisasi: r });
+  }
+  return {
+    ok: true,
+    bulan: bulan,
+    bulanKini: bulanKini_(),
+    minggu: mingguBulan_(bulan),
+    mingguKini: mingguKini_(bulan),
+    tim: tim.map(function (t) {
+      return {
+        id: t.id, nama: t.nama, singkat: t.singkat, ketua: t.ketua, ketuaNama: namaAkun[t.ketua] || '',
+        warna: t.warna, urutan: +t.urutan || 0, aktif: t.aktif !== false, boleh: bolehTim_(u, t)
+      };
+    }),
+    rencana: semuaR.filter(function (x) { return x.bulan === bulan; }).map(function (x) {
+      return { id: x.id, tim: x.tim, kegiatan: x.kegiatan, satuan: x.satuan, target: +x.target || 0, catatan: x.catatan, urutan: +x.urutan || 0 };
+    }).sort(function (a, c) { return a.urutan - c.urutan; }),
+    monev: semuaM.filter(function (x) { return x.bulan === bulan; }).map(function (x) {
+      return { id: x.id, rencana: x.rencana, tim: x.tim, minggu: +x.minggu || 0, realisasi: +x.realisasi || 0, kendala: x.kendala, status: x.status, oleh: x.oleh, diubah: x.diubah };
+    }),
+    tren: tren,
+    adaBulanLalu: semuaR.some(function (x) { return x.bulan === bulanGeser_(bulan, -1); })
+  };
+}
+
+function rapikanRencana_(x, tim, bulan, urutan) {
+  var keg = String(x && x.kegiatan || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+  if (!keg) return null;
+  var target = Math.round(Math.abs(+(x.target) || 0) * 100) / 100;
+  if (target > 1000000) target = 1000000;
+  return {
+    id: String(x.id || '').replace(/[^\w-]/g, '').slice(0, 20) || idBaru_(),
+    tim: tim, bulan: bulan, kegiatan: keg,
+    satuan: String(x.satuan || '').trim().slice(0, 24) || 'kegiatan',
+    target: String(target),
+    catatan: String(x.catatan || '').trim().slice(0, 200),
+    urutan: String(urutan),
+    oleh: '', diubah: ''
+  };
+}
+
+function simpanRencana_(u, b) {
+  var tim = bacaTim_(), t = cariTim_(tim, String(b.tim || ''));
+  wajibTim_(u, t);
+  var bulan = bulanSah_(b.bulan);
+  var masuk = (b.daftar || []).slice(0, 30);
+  var baru = [], nomor = 0;
+  masuk.forEach(function (x) {
+    var r = rapikanRencana_(x, t.id, bulan, ++nomor);
+    if (r) { r.oleh = u.nama; r.diubah = sekarang_(); baru.push(r); }
+  });
+  var semua = baca_('Rencana');
+  var lain = semua.filter(function (x) { return !(x.tim === t.id && x.bulan === bulan); });
+  tulis_('Rencana', lain.concat(baru));
+  var sah = {};
+  baru.forEach(function (r) { sah[r.id] = 1; });
+  var monev = baca_('Monev'), sisa = monev.filter(function (m) {
+    return !(m.tim === t.id && m.bulan === bulan && !sah[m.rencana]);
+  });
+  if (sisa.length !== monev.length) tulis_('Monev', sisa);
+  catat_(u.nama, 'Ubah rencana monev', t.nama + ' · ' + bulan + ' · ' + baru.length + ' kegiatan');
+  return { ok: true, monev: monevData_(u, { bulan: bulan }) };
+}
+
+function siapkanRencana_(u, b) {
+  var tim = bacaTim_(), t = cariTim_(tim, String(b.tim || ''));
+  wajibTim_(u, t);
+  var bulan = bulanSah_(b.bulan), sumber = b.sumber === 'contoh' ? 'contoh' : 'lalu';
+  var semua = baca_('Rencana');
+  if (semua.some(function (x) { return x.tim === t.id && x.bulan === bulan; })) {
+    throw new Error('Rencana bulan ini sudah ada. Hapus dulu isinya kalau mau diganti.');
+  }
+  var asal = [];
+  if (sumber === 'lalu') {
+    var bl = bulanGeser_(bulan, -1);
+    asal = semua.filter(function (x) { return x.tim === t.id && x.bulan === bl; })
+      .sort(function (a, c) { return (+a.urutan || 0) - (+c.urutan || 0); })
+      .map(function (x) { return { kegiatan: x.kegiatan, satuan: x.satuan, target: x.target, catatan: x.catatan }; });
+    if (!asal.length) throw new Error('Bulan lalu belum ada rencana untuk tim ini.');
+  } else {
+    asal = (CONTOH_RENCANA[t.id] || CONTOH_UMUM).map(function (c) { return { kegiatan: c[0], satuan: c[1], target: c[2] }; });
+  }
+  var nomor = 0, baru = asal.map(function (x) {
+    var r = rapikanRencana_(x, t.id, bulan, ++nomor);
+    r.oleh = u.nama; r.diubah = sekarang_();
+    return r;
+  });
+  tulis_('Rencana', semua.concat(baru));
+  catat_(u.nama, 'Siapkan rencana monev', t.nama + ' · ' + bulan + ' · ' + (sumber === 'lalu' ? 'salin bulan lalu' : 'contoh') + ' · ' + baru.length + ' kegiatan');
+  return { ok: true, monev: monevData_(u, { bulan: bulan }) };
+}
+
+function simpanRealisasi_(u, b) {
+  var tim = bacaTim_(), t = cariTim_(tim, String(b.tim || ''));
+  wajibTim_(u, t);
+  var bulan = bulanSah_(b.bulan);
+  var daftarMinggu = mingguBulan_(bulan), minggu = Math.round(+b.minggu || 0);
+  if (!(minggu >= 1 && minggu <= daftarMinggu.length)) throw new Error('Minggu tidak sah untuk bulan ' + bulan + '.');
+  var rencana = baca_('Rencana').filter(function (x) { return x.tim === t.id && x.bulan === bulan; });
+  if (!rencana.length) throw new Error('Rencana bulan ini belum disusun.');
+  var sah = {};
+  rencana.forEach(function (r) { sah[r.id] = 1; });
+  var isian = {};
+  (b.isi || []).slice(0, 30).forEach(function (x) {
+    var rid = String(x && x.rencana || '');
+    if (!sah[rid]) return;
+    var nilai = Math.round(Math.abs(+(x.realisasi) || 0) * 100) / 100;
+    isian[rid] = {
+      realisasi: String(nilai > 1000000 ? 1000000 : nilai),
+      kendala: String(x.kendala || '').replace(/\s+/g, ' ').trim().slice(0, 300),
+      status: /^(jalan|selesai|kendala|belum)$/.test(String(x.status || '')) ? String(x.status) : 'jalan'
+    };
+  });
+  var semua = baca_('Monev');
+  var sisa = semua.filter(function (m) { return !(m.tim === t.id && m.bulan === bulan && +m.minggu === minggu && isian[m.rencana]); });
+  var baru = Object.keys(isian).map(function (rid) {
+    return {
+      id: idBaru_(), rencana: rid, tim: t.id, bulan: bulan, minggu: String(minggu),
+      realisasi: isian[rid].realisasi, kendala: isian[rid].kendala, status: isian[rid].status,
+      oleh: u.nama, diubah: sekarang_()
+    };
+  });
+  tulis_('Monev', sisa.concat(baru));
+  catat_(u.nama, 'Isi monev mingguan', t.nama + ' · ' + bulan + ' minggu ' + minggu + ' · ' + baru.length + ' kegiatan');
+  return { ok: true, monev: monevData_(u, { bulan: bulan }) };
+}
+
+function simpanTim_(u, b) {
+  wajibPeran_(u, 'pengelola');
+  var x = b.tim || {};
+  var id = String(x.id || '').replace(/[^\w-]/g, '').toLowerCase().slice(0, 24) || ('t' + idBaru_().slice(0, 6));
+  var nama = String(x.nama || '').trim().slice(0, 100);
+  if (!nama) throw new Error('Nama tim wajib diisi.');
+  var daftar = bacaTim_(), lama = null;
+  daftar.forEach(function (t) { if (t.id === id) lama = t; });
+  var obj = lama || { id: id, urutan: String(daftar.length + 1) };
+  obj.nama = nama;
+  obj.singkat = String(x.singkat || '').trim().slice(0, 160);
+  obj.ketua = rapikanId_(x.ketua);
+  obj.warna = /^#[0-9a-fA-F]{6}$/.test(String(x.warna || '')) ? x.warna : (obj.warna || '#1C5AA3');
+  obj.aktif = x.aktif !== false;
+  if (x.urutan) obj.urutan = String(Math.max(1, Math.round(+x.urutan || 1)));
+  if (!lama) daftar.push(obj);
+  tulis_('Tim', daftar);
+  catat_(u.nama, lama ? 'Ubah tim monev' : 'Tambah tim monev', nama + (obj.ketua ? ' · ketua ' + obj.ketua : ' · ketua belum diatur'));
+  return { ok: true, monev: monevData_(u, { bulan: b.bulan }) };
+}
+
+function hapusTim_(u, b) {
+  wajibPeran_(u, 'pengelola');
+  var id = String(b.id || '').replace(/[^\w-]/g, '').slice(0, 24);
+  var dipakai = baca_('Rencana').some(function (x) { return x.tim === id; });
+  if (dipakai) throw new Error('Tim ini sudah punya rencana monev. Nonaktifkan saja supaya riwayatnya tidak hilang.');
+  var daftar = bacaTim_().filter(function (t) { return t.id !== id; });
+  tulis_('Tim', daftar);
+  catat_(u.nama, 'Hapus tim monev', id);
+  return { ok: true, monev: monevData_(u, { bulan: b.bulan }) };
 }
 
 /* =====================================================================

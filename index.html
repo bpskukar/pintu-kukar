@@ -46,9 +46,11 @@
         <a href="#/" data-nav="beranda">Cari</a>
         <a href="#/kategori" data-nav="kategori">Kategori</a>
         <a href="#/terbaru" data-nav="terbaru">Terbaru</a>
-        <a href="monev/">Monev</a>
-        <a class="nav-ext" id="tautan-peta" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder<span class="ext-tanda" data-ikon="external"></span></a>
+        <a href="#/monev" data-nav="monev">Monev</a>
+        <a href="#/kanal" data-nav="kanal">Kanal</a>
         <a href="#/panduan" data-nav="panduan">Panduan</a>
+        <a class="nav-ext nav-luas" id="tautan-satukukar" href="https://sites.google.com/view/satukukar2026" target="_blank" rel="noopener"><span data-ikon="door"></span>SATU KUKAR<span class="ext-tanda" data-ikon="external"></span></a>
+        <a class="nav-ext nav-luas" id="tautan-peta" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder<span class="ext-tanda" data-ikon="external"></span></a>
       </nav>
       <div class="kepala-aksi">
         <button class="tombol-ikon kelola-tombol" id="tombol-kelola" type="button" aria-pressed="false" hidden></button>
@@ -62,9 +64,8 @@
     <nav class="nav-hp" aria-label="Menu utama (HP)">
       <a href="#/" data-nav="beranda"><span data-ikon="search"></span>Cari</a>
       <a href="#/kategori" data-nav="kategori"><span data-ikon="grid"></span>Kategori</a>
-      <a href="#/terbaru" data-nav="terbaru"><span data-ikon="clock"></span>Terbaru</a>
-      <a href="monev/"><span data-ikon="chart"></span>Monev</a>
-      <a class="nav-ext" id="tautan-peta-hp" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener"><span data-ikon="map"></span>Peta Finder</a>
+      <a href="#/monev" data-nav="monev"><span data-ikon="chart"></span>Monev</a>
+      <a href="#/kanal" data-nav="kanal"><span data-ikon="door"></span>Kanal</a>
       <a href="#/panduan" data-nav="panduan"><span data-ikon="book"></span>Panduan</a>
     </nav>
   </header>
@@ -134,6 +135,9 @@
     <div id="v-kategori-semua" class="tampilan" hidden></div>
     <div id="v-folder" class="tampilan" hidden></div>
     <div id="v-terbaru" class="tampilan" hidden></div>
+    <div id="v-kanal" class="tampilan" hidden></div>
+    <div id="v-monev" class="tampilan" hidden></div>
+    <div id="v-monev-tim" class="tampilan" hidden></div>
 
     <!-- PANDUAN -->
     <div id="v-panduan" class="tampilan" hidden>
@@ -152,6 +156,8 @@
           <a href="#pd-folder">Menjelajah folder</a>
           <a href="#pd-kategori">Kategori tim</a>
           <a href="#pd-terbaru">Berkas terbaru</a>
+          <a href="#pd-kanal">Kanal BPS Kukar</a>
+          <a href="#pd-monev">Monev mingguan tim</a>
           <a href="#pd-kelola">Untuk pengelola</a>
           <a href="#pd-admin">Untuk admin</a>
           <a href="#pd-hp">Pasang di HP</a>
@@ -199,6 +205,40 @@
             <h2>Berkas terbaru</h2>
             <p>Menu <b>Terbaru</b> menampilkan berkas yang baru diubah atau baru ditambahkan, dikelompokkan per hari. Saring per rentang waktu, jenis, atau kategori.</p>
           </section>
+          <section id="pd-kanal">
+            <h2>Kanal BPS Kukar</h2>
+            <p>Menu <b>Kanal</b> mengumpulkan semua pintu masuk kantor dalam satu halaman: SATU KUKAR 2026 untuk berkas harian, Peta Finder, aplikasi kerja BPS (KipApp, BOS, FASIH, SRIKANDI, SIMDASI, dan lainnya), berkas kepegawaian seperti form cuti dan jadwal piket PST, berkas SAKIP dan POK, berkas tim SE2026, media sosial resmi, sampai arsip SATU KUKAR 2025 dan 2024.</p>
+            <ul>
+              <li>Kotak di atas halaman menyaring kanal. Ketik <i>cuti</i>, <i>harga</i>, atau <i>sakip</i> untuk langsung menemukannya.</li>
+              <li>Semua kanal terbuka di tab baru, jadi pencarian Anda di PINTU tidak hilang.</li>
+              <li>Aplikasi BPS tetap meminta akun BPS masing-masing. PINTU hanya mengantar, tidak menyimpan kata sandi aplikasi lain.</li>
+            </ul>
+            <p class="pd-tip">Mau menambah atau mengganti kanal? Sunting berkas <b>assets/js/kanal.js</b> di repositori GitHub <b>bpskukar/pintu-kukar</b>, commit, lalu tunggu satu menit. Tidak perlu menyentuh Apps Script.</p>
+          </section>
+          <section id="pd-monev">
+            <h2>Monev mingguan tim</h2>
+            <p>Menu <b>Monev</b> memantau pekerjaan rutin tiap tim kerja. Polanya sederhana: rencana dan target disusun sekali di awal bulan, lalu realisasinya dicatat tiap minggu. Minggu dihitung per tanggal — M1 tanggal 1–7, M2 tanggal 8–14, M3 tanggal 15–21, M4 tanggal 22–28, dan M5 sisa tanggal di akhir bulan.</p>
+            <h3>Menyusun rencana bulanan</h3>
+            <ul>
+              <li>Buka menu <b>Monev</b>, klik tim Anda, lalu <b>Atur rencana</b>.</li>
+              <li>Baru pertama kali? Tombol <b>Pakai contoh rencana</b> mengisi kegiatan rutin tim Anda beserta satuan dan target awal. Sesuaikan angkanya, hapus yang tidak dipakai, tambahkan yang kurang.</li>
+              <li>Bulan berikutnya cukup klik <b>Salin bulan lalu</b>, lalu ubah targetnya.</li>
+              <li>Satu baris berisi satu kegiatan rutin, satuannya (dokumen, laporan, kegiatan, sampel), dan target sebulan. Target inilah yang dipakai menghitung persentase capaian.</li>
+            </ul>
+            <h3>Mengisi tiap minggu</h3>
+            <ul>
+              <li>Klik <b>Isi minggu ini</b>, pilih minggunya, lalu isi jumlah yang <b>selesai minggu itu</b> — bukan jumlah kumulatif sejak awal bulan.</li>
+              <li>Status dipilih per kegiatan: Berjalan, Selesai, Terkendala, atau Belum mulai. Yang bertanda <b>Terkendala</b> muncul di dasbor dan di daftar kendala, jadi mudah dibahas saat rapat.</li>
+              <li>Minggu yang sama boleh diisi ulang kapan saja; isian terbaru menimpa yang lama, tidak menumpuk.</li>
+            </ul>
+            <h3>Membaca dasbor</h3>
+            <ul>
+              <li>Empat kartu di atas menunjukkan berapa tim yang sudah melapor minggu ini, capaian seluruh kantor, jumlah kegiatan terkendala, dan tim yang belum menyusun rencana.</li>
+              <li>Pada kartu tiap tim, angka kecil 1–5 adalah status laporan tiap minggu: hijau berarti sudah mengisi, merah berarti minggu yang sudah lewat tapi belum diisi, abu-abu berarti minggu yang belum tiba.</li>
+              <li>Tombol <b>Unduh CSV</b> mengunduh rekap bulan berjalan untuk dilampirkan ke laporan atau diolah di Excel.</li>
+            </ul>
+            <p class="pd-tip">Siapa yang boleh mengisi? Ketua tim untuk timnya sendiri, serta pengelola dan admin untuk semua tim. Semua pegawai bisa melihat dasbor. Admin menetapkan ketua lewat <b>Kelola tim</b> di halaman Monev — isi dengan email/ID akun PINTU orang tersebut.</p>
+          </section>
           <section id="pd-kelola">
             <h2>Untuk pengelola</h2>
             <p>Akun berperan <b>pengelola</b> atau <b>admin</b> punya tombol <b>Kelola</b> (ikon pensil) di kanan atas. Saat Kelola aktif:</p>
@@ -235,7 +275,7 @@
   <footer class="kaki">
     <div class="bungkus kaki-baris">
       <p><strong>PINTU Kukar</strong> · Pencarian Internal Terpadu · <span id="kaki-kantor">BPS Kabupaten Kutai Kartanegara</span></p>
-      <p class="kaki-tautan"><a id="tautan-pintar" href="https://bpskukar.github.io/" target="_blank" rel="noopener">PINTAR Kukar (layanan publik)</a><a id="tautan-peta-kaki" href="https://s.bps.go.id/PetaFinderKukar" target="_blank" rel="noopener">Peta Finder Kukar</a><a href="monev/">Monev kegiatan</a><a href="#/panduan">Panduan</a><a href="#" data-aksi="pasang">Pasang di HP</a></p>
+      <p class="kaki-tautan"><a id="tautan-pintar" href="https://bpskukar.github.io/" target="_blank" rel="noopener">PINTAR Kukar (layanan publik)</a><a href="#/kanal">Kanal BPS Kukar</a><a id="tautan-satukukar-kaki" href="https://sites.google.com/view/satukukar2026" target="_blank" rel="noopener">SATU KUKAR 2026</a><a href="#/panduan">Panduan</a><a href="#" data-aksi="pasang">Pasang di HP</a></p>
     </div>
   </footer>
 
@@ -244,6 +284,7 @@
 </div>
 
 <script src="assets/js/config.js"></script>
+<script src="assets/js/kanal.js"></script>
 <script src="assets/js/cari.js"></script>
 <script src="assets/js/app.js"></script>
 </body>

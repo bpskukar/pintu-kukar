@@ -19,8 +19,9 @@ browser, jadi hasil muncul saat pegawai mengetik.
 | Label & kata kunci | Pengelola menambah kata kunci (istilah lain), label, dan catatan pada berkas atau folder. |
 | Akun pegawai | Login diperiksa di server. Tiga peran: pengguna, pengelola, admin. Admin mengelola akun dari website. |
 | Otomatis | Daftar berkas diperbarui setiap 15 menit dan didaftar ulang penuh setiap malam pukul 02.00 WITA. |
+| Kanal BPS Kukar | Satu halaman berisi semua pintu kantor: SATU KUKAR 2026, Peta Finder, aplikasi BPS, berkas kepegawaian, SAKIP, SE2026, media sosial, dan arsip SATU KUKAR 2025/2024. Daftarnya ada di `assets/js/kanal.js`. |
+| Monev mingguan tim | Rencana & target bulanan tiap tim kerja, realisasi dicatat per minggu (M1 = tgl 1–7, dst). Dasbor capaian, status lapor, kendala, tren 6 bulan, dan unduh CSV. |
 | Pasang di HP | Bisa dipasang seperti aplikasi (PWA). |
-| Monev kegiatan | Menu **Monev** (`/monev/`): monitoring & evaluasi kegiatan per pegawai. Kegiatan pertama: *Cleaning Data Anomali SE2026* (progres verifikasi 1–10). |
 
 ## Cara kerja singkat
 
@@ -57,18 +58,6 @@ Website hanya mengunduh **perubahan** sejak kunjungan terakhir, bukan daftar len
 2. Menu akun (kanan atas) → **Akun pegawai** → **Tambah akun** untuk setiap pegawai (nama, email/ID, peran, kata sandi awal).
 3. Menu akun → **Pengaturan & daftar berkas** → tempel link folder yang **tidak boleh** ikut dicari (misalnya kepegawaian).
 
-### 4. Monev (monitoring & evaluasi kegiatan)
-1. Editor Apps Script → **+** di samping *Berkas* → **Skrip** → beri nama `Monev` → tempel isi `apps-script/Monev.gs` → **Simpan**.
-2. Tempel juga `apps-script/Kode.gs` terbaru (ada 2 baris tambahan `monev` di `doPost`) → **Simpan**.
-3. **Terapkan → Kelola deployment → ikon pensil → Versi: Versi baru → Terapkan**.
-4. Masuk PINTU sebagai **admin** → menu **Monev** → *Cleaning Data Anomali SE2026* → panel **Sumber data** → tempel link spreadsheet/folder tindak lanjut (boleh `s.bps.go.id/tindaklanjutse64`) → **Simpan**.
-   Gmail kantor harus bisa membuka berkas itu (minimal *Lihat*). Berkas Excel (.xlsx) dibaca lewat salinan Google Sheets di folder sistem.
-5. Selesai. Pegawai cukup masuk PINTU lalu klik **Monev**. Angka di-cache 10 menit; pengelola/admin bisa klik **Perbarui data**.
-
-Tanpa langkah 1–4 halaman tetap bisa dipakai lewat tombol **Pakai file Excel** (file diolah di browser, tidak diunggah).
-
-Menambah kegiatan monev baru: tambah entri di `monev/config.js` (`kegiatan`), salin `monev/cleaning-se2026.html` sebagai halaman baru, dan daftarkan kegiatannya di `MONEV` pada `Monev.gs`.
-
 ## Memperbarui
 - **Website:** ganti file di GitHub → *Commit changes* → tunggu build hijau → buka PINTU dengan `Ctrl/Cmd + Shift + R`.
 - **Apps Script:** tempel `Kode.gs` baru → Simpan → **Terapkan → Kelola deployment → ikon pensil → Versi: Versi baru → Terapkan**.
@@ -87,18 +76,22 @@ Menambah kegiatan monev baru: tambah entri di `monev/config.js` (`kegiatan`), sa
 - Berkas di *Drive bersama* (Shared drive) tidak ikut; PINTU membaca *Drive Saya* dan *Dibagikan dengan saya* milik Gmail kantor.
 - Berkas yang tidak bisa dibuka Gmail kantor tidak bisa ditemukan PINTU.
 
+## Monev mingguan
+
+- **Siapa mengisi:** ketua tim untuk timnya sendiri; pengelola dan admin untuk semua tim. Semua pegawai boleh melihat dasbor.
+- **Menetapkan ketua:** menu Monev → **Kelola tim** → ikon pensil → isi *Email/ID akun ketua* dengan akun PINTU orang itu.
+- **Alur bulanan:** *Atur rencana* (atau **Pakai contoh rencana** / **Salin bulan lalu**) → tiap minggu klik **Isi minggu ini** → akhir bulan unduh CSV untuk laporan.
+- **Minggu:** M1 tanggal 1–7, M2 tanggal 8–14, M3 tanggal 15–21, M4 tanggal 22–28, M5 sisa tanggal.
+- **Data tersimpan di** spreadsheet database PINTU, pada sheet `Tim`, `Rencana`, dan `Monev`. Sheet dibuat otomatis saat menu Monev pertama kali dibuka — tidak perlu menjalankan `pasang` ulang.
+
 ## Struktur
 ```
 index.html              halaman utama + panduan
 assets/css/style.css    tampilan (tema terang & gelap)
 assets/js/config.js     alamat Apps Script & nama kantor  ← diisi saat pemasangan
+assets/js/kanal.js      daftar kanal BPS Kukar di halaman Kanal
 assets/js/cari.js       mesin pencari di browser
 assets/js/app.js        aplikasi
 sw.js, manifest.webmanifest, assets/img/   aplikasi terpasang (PWA)
-monev/index.html        daftar kegiatan monev
-monev/cleaning-se2026.html + cleaning.js   monitoring cleaning data anomali SE2026
-monev/config.js         daftar kegiatan, judul verifikasi, alias nama pegawai
-monev/monev.js, monev.css   fungsi & gaya bersama halaman monev
-apps-script/Monev.gs    backend monev (membaca spreadsheet kegiatan, kirim rekap jumlah saja)
 apps-script/Kode.gs     backend Google Apps Script
 ```

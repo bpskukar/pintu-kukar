@@ -505,11 +505,11 @@
   /* =================================================================
      RUTE
      ================================================================= */
-  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "panduan"];
+  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "kanal", "monev", "monev-tim", "panduan"];
   var rute = { nama: "beranda", arg: "" };
   function tampilkan(nama) {
     TAMPILAN.forEach(function (t) { $("#v-" + t).hidden = t !== nama; });
-    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : nama === "folder" ? "" : nama;
+    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : nama === "monev-tim" ? "monev" : nama === "folder" ? "" : nama;
     $$("[data-nav]").forEach(function (a) { a.classList.toggle("aktif", a.getAttribute("data-nav") === navNama); });
   }
   function bacaRute() {
@@ -519,6 +519,9 @@
     if ((m = h.match(/^#\/f\/(\d+)/))) return { nama: "folder", arg: +m[1] };
     if (/^#\/kategori/.test(h)) return { nama: "kategori-semua" };
     if (/^#\/terbaru/.test(h)) return { nama: "terbaru" };
+    if ((m = h.match(/^#\/monev\/([\w-]+)/))) return { nama: "monev-tim", arg: m[1] };
+    if (/^#\/monev/.test(h)) return { nama: "monev" };
+    if (/^#\/kanal/.test(h)) return { nama: "kanal" };
     if (/^#\/panduan/.test(h)) return { nama: "panduan" };
     if (/^#pd-/.test(h)) return { nama: "panduan", gulir: h.slice(1) };
     if ((m = h.match(/^#\/cari\/(.*)$/))) return { nama: "beranda", q: decodeURIComponent(m[1]) };
@@ -539,6 +542,9 @@
     else if (rute.nama === "kategori-semua") renderSemuaKategori();
     else if (rute.nama === "folder") renderFolder(rute.arg);
     else if (rute.nama === "terbaru") renderTerbaru();
+    else if (rute.nama === "kanal") renderKanal();
+    else if (rute.nama === "monev") renderMonev();
+    else if (rute.nama === "monev-tim") renderMonevTim(rute.arg);
   }
   function renderSemua() { renderStatus(); isiPilihanKategori(); renderRute(); }
 
@@ -1185,6 +1191,397 @@
   }
 
   /* =================================================================
+     KANAL BPS KUKAR
+     ================================================================= */
+  var kanalQ = "";
+  function daftarKanal() { return (window.PINTU_KANAL || []).filter(function (g) { return g && g.tautan && g.tautan.length; }); }
+  function kartuKanal(t) {
+    return '<a class="kanal-kartu' + (t.utama ? " utama" : "") + '" href="' + esc(t.url) + '" target="_blank" rel="noopener" data-cari="' + esc(((t.nama || "") + " " + (t.ket || "")).toLowerCase()) + '">' +
+      '<span class="kanal-ikon">' + ic(t.ikon || "link") + "</span>" +
+      '<span class="kanal-teks"><b>' + esc(t.nama) + "</b>" + (t.ket ? "<small>" + esc(t.ket) + "</small>" : "") + "</span>" +
+      '<span class="kanal-luar">' + ic("external") + "</span></a>";
+  }
+  function renderKanal() {
+    var v = $("#v-kanal"), grup = daftarKanal();
+    var jumlah = grup.reduce(function (a, g) { return a + g.tautan.length; }, 0);
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Kanal</p>' +
+      "<h1>Kanal BPS Kukar</h1><p class=\"kepala-sub\">" + angka(jumlah) + " pintu ke layanan, aplikasi, dan berkas kantor. Semuanya terbuka di tab baru, jadi pencarian Anda di PINTU tidak hilang.</p></div></section>" +
+      '<div class="bungkus isi-halaman">' +
+      '<div class="kotak-saring kanal-saring">' + ic("search") + '<input id="kanal-q" type="search" placeholder="Saring kanal, misalnya cuti atau harga" value="' + esc(kanalQ) + '" aria-label="Saring kanal"></div>' +
+      grup.map(function (g) {
+        return '<section class="kanal-grup' + (g.arsip ? " arsip" : "") + '"><h2>' + esc(g.nama) + "</h2>" + (g.ket ? "<p>" + esc(g.ket) + "</p>" : "") +
+          '<div class="kanal-grid">' + g.tautan.map(kartuKanal).join("") + "</div></section>";
+      }).join("") +
+      '<p class="kanal-kaki">Mau menambah atau mengubah kanal? Sunting berkas <b>assets/js/kanal.js</b> di repositori GitHub, lalu tunggu satu menit.</p></div>';
+    saringKanal();
+  }
+  function saringKanal() {
+    var q = kanalQ.trim().toLowerCase();
+    $$("#v-kanal .kanal-grup").forEach(function (sec) {
+      var ada = 0;
+      $$(".kanal-kartu", sec).forEach(function (a) {
+        var cocok = !q || a.getAttribute("data-cari").indexOf(q) > -1;
+        a.hidden = !cocok;
+        if (cocok) ada++;
+      });
+      sec.hidden = !ada;
+    });
+  }
+
+  /* =================================================================
+     MONEV MINGGUAN TIM
+     ================================================================= */
+  var M = { bulan: "", data: null, muat: false, galat: "" };
+  var STATUS_MONEV = { jalan: "Berjalan", selesai: "Selesai", kendala: "Terkendala", belum: "Belum mulai" };
+
+  function namaBulan(b) {
+    if (!/^\d{4}-\d{2}$/.test(b || "")) return "";
+    return BULAN_P[+b.slice(5, 7) - 1] + " " + b.slice(0, 4);
+  }
+  function geserBulan(b, n) {
+    var y = +b.slice(0, 4), m = +b.slice(5, 7) - 1 + n, d = new Date(y, m, 1);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1);
+  }
+  function tglRingkas(s) { var m = String(s || "").match(/(\d{4})-(\d{2})-(\d{2})/); return m ? +m[3] + " " + BULAN[+m[2] - 1] : ""; }
+  function persen(r, t) { return t > 0 ? Math.round((r / t) * 100) : 0; }
+  function nomorRapi(n) { return (Math.round((+n || 0) * 100) / 100).toLocaleString("id-ID"); }
+
+  function muatMonev(lanjut, bulan) {
+    if (M.muat) return;
+    M.muat = true; M.galat = "";
+    panggil("monev", { bulan: bulan || M.bulan || "" }).then(function (res) {
+      M.muat = false; M.data = res; M.bulan = res.bulan; lanjut();
+    }, function (err) {
+      M.muat = false; M.galat = (err && err.message) || "Gagal memuat monev.";
+      if (/Aksi tidak dikenal/i.test(M.galat)) M.galat = "Apps Script masih versi lama. Admin perlu menempel Kode.gs terbaru lalu Terapkan → Kelola deployment → Versi baru.";
+      lanjut();
+    });
+  }
+  function pakaiHasilMonev(res) {
+    if (res && res.monev) { M.data = res.monev; M.bulan = res.monev.bulan; }
+    renderRute();
+  }
+  function gantiBulanMonev(n) {
+    M.bulan = geserBulan(M.bulan || M.data.bulan, n);
+    M.data = null;
+    renderRute();
+  }
+  function monevRingkas(d) {
+    var per = {};
+    d.tim.forEach(function (t) { per[t.id] = { tim: t, target: 0, realisasi: 0, kegiatan: 0, minggu: {}, kendala: 0 }; });
+    d.rencana.forEach(function (r) { var p = per[r.tim]; if (p) { p.target += r.target; p.kegiatan++; } });
+    d.monev.forEach(function (m) {
+      var p = per[m.tim]; if (!p) return;
+      p.realisasi += m.realisasi;
+      p.minggu[m.minggu] = (p.minggu[m.minggu] || 0) + 1;
+      if (m.status === "kendala") p.kendala++;
+    });
+    return per;
+  }
+  function muatHtmlMonev(v) {
+    v.innerHTML = '<div class="bungkus isi-halaman"><p class="gerbang-muat"><span class="putar" aria-hidden="true"></span>Memuat monev…</p></div>';
+  }
+  function galatHtmlMonev(v) {
+    v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>' + esc(M.galat) + '</p><p><button class="tombol" type="button" data-aksi="monev-ulang">Coba lagi</button></p></div></div>';
+  }
+  function pilihBulanHtml(d) {
+    return '<div class="bulan-pilih"><button class="ikon-kecil" type="button" data-aksi="monev-mundur" aria-label="Bulan sebelumnya">' + ic("left") + "</button>" +
+      "<b>" + esc(namaBulan(d.bulan)) + "</b>" +
+      '<button class="ikon-kecil" type="button" data-aksi="monev-maju" aria-label="Bulan berikutnya">' + ic("right") + "</button>" +
+      (d.bulan !== d.bulanKini ? '<button class="tombol hantu kecil" type="button" data-aksi="monev-kini">Bulan ini</button>' : "") + "</div>";
+  }
+
+  function renderMonev() {
+    var v = $("#v-monev");
+    if (!M.data) { if (M.galat) galatHtmlMonev(v); else { muatHtmlMonev(v); muatMonev(renderMonev); } return; }
+    var d = M.data, per = monevRingkas(d), tim = d.tim.filter(function (t) { return t.aktif; });
+    var totT = 0, totR = 0, lapor = 0, kendala = 0, tanpaRencana = 0;
+    tim.forEach(function (t) {
+      var p = per[t.id];
+      totT += p.target; totR += p.realisasi; kendala += p.kendala;
+      if (!p.kegiatan) tanpaRencana++;
+      if (d.mingguKini && p.minggu[d.mingguKini]) lapor++;
+    });
+    var mingguTeks = d.mingguKini ? "Minggu " + d.mingguKini + " (" + tglRingkas(d.minggu[d.mingguKini - 1].awal) + "–" + tglRingkas(d.minggu[d.mingguKini - 1].akhir) + ")" : "Bulan lewat";
+    var maxTren = Math.max.apply(null, d.tren.map(function (x) { return Math.max(x.target, x.realisasi); }).concat([1]));
+
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Monev</p>' +
+      '<div class="monev-kepala"><div><h1>Monev mingguan tim</h1><p class="kepala-sub">Rencana dan target disusun bulanan, realisasinya dicatat tiap minggu oleh ketua tim.</p></div>' +
+      '<div class="monev-alat">' + pilihBulanHtml(d) +
+      '<button class="tombol hantu kecil" type="button" data-aksi="monev-csv">' + ic("download") + "Unduh CSV</button>" +
+      (peranMin("pengelola") ? '<button class="tombol hantu kecil" type="button" data-aksi="monev-tim-kelola">' + ic("users") + "Kelola tim</button>" : "") +
+      "</div></div></div></section>" +
+      '<div class="bungkus isi-halaman"><div class="kpi-baris monev-kpi">' +
+      kpiMonev(d.mingguKini ? lapor + " / " + tim.length : "—", "Tim melapor " + (d.mingguKini ? "minggu ini" : "minggu terakhir"), mingguTeks, lapor >= tim.length && tim.length ? "baik" : lapor ? "sedang" : "kurang") +
+      kpiMonev(persen(totR, totT) + "%", "Capaian bulan ini", nomorRapi(totR) + " dari target " + nomorRapi(totT), persen(totR, totT) >= 80 ? "baik" : persen(totR, totT) >= 50 ? "sedang" : "kurang") +
+      kpiMonev(angka(kendala), "Kegiatan terkendala", kendala ? "Perlu dibahas di rapat" : "Tidak ada laporan kendala", kendala ? "kurang" : "baik") +
+      kpiMonev(angka(tanpaRencana), "Tim belum punya rencana", tanpaRencana ? "Rencana bulan ini belum disusun" : "Semua tim sudah menyusun rencana", tanpaRencana ? "sedang" : "baik") +
+      "</div>" +
+      '<section class="kotak monev-tren"><h2>Target dan realisasi 6 bulan</h2><div class="tren-bar">' +
+      d.tren.map(function (x) {
+        return '<div class="tren-kol' + (x.bulan === d.bulan ? " kini" : "") + '"><div class="tren-batang">' +
+          '<i class="t" style="height:' + Math.round((x.target / maxTren) * 100) + '%" title="Target ' + nomorRapi(x.target) + '"></i>' +
+          '<i class="r" style="height:' + Math.round((x.realisasi / maxTren) * 100) + '%" title="Realisasi ' + nomorRapi(x.realisasi) + '"></i></div>' +
+          "<span>" + BULAN[+x.bulan.slice(5, 7) - 1] + "</span></div>";
+      }).join("") + '</div><p class="tren-ket"><i class="kotak-t"></i>Target <i class="kotak-r"></i>Realisasi</p></section>' +
+      '<section class="monev-daftar">' + tim.map(function (t) { return kartuTim(t, per[t.id], d); }).join("") +
+      (tim.length ? "" : '<div class="kosong"><p>Belum ada tim aktif.</p></div>') + "</section></div>";
+  }
+  function kpiMonev(angkaBesar, judul, ket, nada) {
+    return '<div class="kpi ' + nada + '"><b>' + esc(String(angkaBesar)) + "</b><span>" + esc(judul) + "</span><small>" + esc(ket) + "</small></div>";
+  }
+  function kartuTim(t, p, d) {
+    var ps = persen(p.realisasi, p.target);
+    var titik = d.minggu.map(function (w) {
+      var isi = p.minggu[w.n] ? "lapor" : (!p.kegiatan || (d.mingguKini && w.n > d.mingguKini) ? "nanti" : "telat");
+      return '<span class="w ' + isi + '" title="Minggu ' + w.n + " (" + tglRingkas(w.awal) + "–" + tglRingkas(w.akhir) + ")\">" + w.n + "</span>";
+    }).join("");
+    return '<a class="monev-kartu" href="#/monev/' + esc(t.id) + '">' +
+      '<span class="mk-warna" style="background:' + esc(t.warna || "#1C5AA3") + '"></span>' +
+      '<span class="mk-isi"><span class="mk-judul"><b>' + esc(t.nama) + "</b>" + (p.kendala ? '<span class="tanda kendala">' + p.kendala + " kendala</span>" : "") + "</span>" +
+      '<span class="mk-ket">' + esc(t.ketuaNama || t.ketua || "Ketua belum diatur") + " · " + (p.kegiatan ? p.kegiatan + " kegiatan" : "rencana belum disusun") + "</span>" +
+      '<span class="mk-bar"><i style="width:' + Math.min(100, ps) + '%"></i></span>' +
+      '<span class="mk-angka">' + (p.kegiatan ? "<b>" + ps + "%</b> " + nomorRapi(p.realisasi) + " / " + nomorRapi(p.target) : '<span class="mk-belum">belum ada target</span>') +
+      '<span class="mk-minggu">' + titik + "</span></span></span>" +
+      '<span class="mk-panah">' + ic("arrowR") + "</span></a>";
+  }
+
+  function renderMonevTim(id) {
+    var v = $("#v-monev-tim");
+    if (!M.data) { if (M.galat) galatHtmlMonev(v); else { muatHtmlMonev(v); muatMonev(function () { renderMonevTim(id); }); } return; }
+    var d = M.data, t = null;
+    d.tim.forEach(function (x) { if (x.id === id) t = x; });
+    if (!t) { v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>Tim tidak ditemukan.</p><p><a class="tombol" href="#/monev">Kembali ke monev</a></p></div></div>'; return; }
+    var rencana = d.rencana.filter(function (r) { return r.tim === id; });
+    var isian = {};
+    d.monev.forEach(function (m) { if (m.tim === id) { isian[m.rencana + "|" + m.minggu] = m; } });
+    var kolMinggu = d.minggu;
+    var totT = 0, totR = 0;
+    var baris = rencana.map(function (r) {
+      var rr = 0;
+      var sel = kolMinggu.map(function (w) {
+        var m = isian[r.id + "|" + w.n];
+        if (m) rr += m.realisasi;
+        return '<td class="angka' + (m && m.status === "kendala" ? " kendala" : "") + '">' + (m ? nomorRapi(m.realisasi) : '<span class="kosong-sel">·</span>') + "</td>";
+      }).join("");
+      totT += r.target; totR += rr;
+      var ps = persen(rr, r.target);
+      return "<tr><td><b>" + esc(r.kegiatan) + "</b>" + (r.catatan ? "<small>" + esc(r.catatan) + "</small>" : "") + "</td>" +
+        "<td>" + esc(r.satuan) + '</td><td class="angka">' + nomorRapi(r.target) + "</td>" + sel +
+        '<td class="angka"><b>' + nomorRapi(rr) + '</b></td><td class="angka"><span class="pil ' + (ps >= 100 ? "baik" : ps >= 50 ? "sedang" : "kurang") + '">' + ps + "%</span></td></tr>";
+    }).join("");
+    var catatan = d.monev.filter(function (m) { return m.tim === id && m.kendala; })
+      .sort(function (a, b) { return b.minggu - a.minggu; })
+      .map(function (m) {
+        var r = null; rencana.forEach(function (x) { if (x.id === m.rencana) r = x; });
+        return '<li><span class="cat-minggu">M' + m.minggu + "</span><div><b>" + esc(r ? r.kegiatan : "Kegiatan") + "</b><p>" + esc(m.kendala) + '</p><small>' + esc(m.oleh || "") + (m.diubah ? " · " + esc(m.diubah) : "") + "</small></div></li>";
+      }).join("");
+
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/monev">Monev</a><span aria-hidden="true">/</span>' + esc(t.nama) + "</p>" +
+      '<div class="monev-kepala"><div><h1>' + esc(t.nama) + "</h1><p class=\"kepala-sub\">" + esc(t.singkat || "") + (t.singkat ? " · " : "") + "Ketua: " + esc(t.ketuaNama || t.ketua || "belum diatur") + "</p></div>" +
+      '<div class="monev-alat">' + pilihBulanHtml(d) +
+      (t.boleh ? '<button class="tombol kecil" type="button" data-aksi="monev-isi" data-id="' + esc(t.id) + '">' + ic("pencil") + "Isi minggu ini</button>" : "") +
+      (t.boleh ? '<button class="tombol hantu kecil" type="button" data-aksi="monev-rencana" data-id="' + esc(t.id) + '">' + ic("clipboard") + "Atur rencana</button>" : "") +
+      '<button class="tombol hantu kecil" type="button" data-aksi="monev-csv" data-id="' + esc(t.id) + '">' + ic("download") + "CSV</button>" +
+      "</div></div></div></section>" +
+      '<div class="bungkus isi-halaman">' +
+      (rencana.length
+        ? '<div class="tabel-gulir"><table class="tabel monev-tabel"><thead><tr><th>Kegiatan</th><th>Satuan</th><th class="angka">Target</th>' +
+          kolMinggu.map(function (w) { return '<th class="angka' + (w.n === d.mingguKini ? " kini" : "") + '" title="' + tglRingkas(w.awal) + "–" + tglRingkas(w.akhir) + '">M' + w.n + "</th>"; }).join("") +
+          '<th class="angka">Realisasi</th><th class="angka">%</th></tr></thead><tbody>' + baris + "</tbody>" +
+          '<tfoot><tr><th colspan="2">Total</th><th class="angka">' + nomorRapi(totT) + "</th>" + kolMinggu.map(function () { return "<th></th>"; }).join("") +
+          '<th class="angka">' + nomorRapi(totR) + '</th><th class="angka">' + persen(totR, totT) + "%</th></tr></tfoot></table></div>"
+        : '<div class="kosong"><p><b>Rencana bulan ' + esc(namaBulan(d.bulan)) + " belum disusun.</b></p>" +
+          (t.boleh
+            ? '<p>Mulai dari contoh rencana rutin tim ini, salin rencana bulan lalu, atau susun sendiri.</p><p class="kosong-aksi">' +
+              '<button class="tombol" type="button" data-aksi="monev-contoh" data-id="' + esc(t.id) + '">Pakai contoh rencana</button>' +
+              (d.adaBulanLalu ? '<button class="tombol hantu" type="button" data-aksi="monev-salin" data-id="' + esc(t.id) + '">Salin bulan lalu</button>' : "") +
+              '<button class="tombol hantu" type="button" data-aksi="monev-rencana" data-id="' + esc(t.id) + '">Susun sendiri</button></p>'
+            : "<p>Menunggu ketua tim menyusun rencana bulan ini.</p>") + "</div>") +
+      (catatan ? '<section class="kotak monev-catatan"><h2>Kendala yang dilaporkan</h2><ul class="cat-daftar">' + catatan + "</ul></section>" : "") +
+      "</div>";
+  }
+
+  /* ---------------- dialog: rencana bulanan ---------------- */
+  function barisRencana(r) {
+    r = r || { id: "", kegiatan: "", satuan: "kegiatan", target: "", catatan: "" };
+    return '<tr class="r-baris"><td><input class="r-kegiatan" type="text" value="' + esc(r.kegiatan) + '" placeholder="Nama kegiatan rutin" maxlength="160"><input type="hidden" class="r-id" value="' + esc(r.id) + '"></td>' +
+      '<td><input class="r-satuan" type="text" value="' + esc(r.satuan) + '" placeholder="dokumen" maxlength="24"></td>' +
+      '<td><input class="r-target" type="number" min="0" step="any" value="' + esc(String(r.target === 0 ? 0 : r.target || "")) + '" placeholder="0"></td>' +
+      '<td><button class="ikon-kecil" type="button" data-hapus-baris aria-label="Hapus kegiatan">' + ic("trash") + "</button></td></tr>";
+  }
+  function dialogRencana(timId) {
+    var d = M.data, t = null;
+    d.tim.forEach(function (x) { if (x.id === timId) t = x; });
+    if (!t) return;
+    var rencana = d.rencana.filter(function (r) { return r.tim === timId; });
+    bukaDialog(
+      '<form id="f-rencana" novalidate>' + kepalaDlg("Rencana " + t.nama, esc(namaBulan(d.bulan)) + " · tulis kegiatan rutin beserta targetnya") +
+      '<div class="dlg-isi"><p class="galat" hidden></p>' +
+      '<div class="tabel-gulir"><table class="tabel rapat"><thead><tr><th>Kegiatan</th><th style="width:110px">Satuan</th><th style="width:96px">Target</th><th style="width:44px"></th></tr></thead>' +
+      '<tbody id="r-isi">' + (rencana.length ? rencana.map(barisRencana).join("") : barisRencana(null) + barisRencana(null)) + "</tbody></table></div>" +
+      '<p class="dlg-aksi-baris"><button class="tombol hantu kecil" type="button" data-tambah-baris>' + ic("plus") + "Tambah kegiatan</button>" +
+      '<button class="tombol hantu kecil" type="button" data-isi-contoh>' + ic("clipboard") + "Pakai contoh rencana</button></p>" +
+      '<p class="dlg-ket">Target dipakai untuk menghitung persentase capaian bulan ini. Kosongkan baris yang tidak dipakai — baris tanpa nama kegiatan tidak disimpan.</p></div>' +
+      kakiDlg("", "Simpan rencana") + "</form>", true);
+    var form = $("#f-rencana");
+    $("[data-tambah-baris]", form).addEventListener("click", function () {
+      $("#r-isi").insertAdjacentHTML("beforeend", barisRencana(null));
+      var baris = $$("#r-isi .r-kegiatan"); baris[baris.length - 1].focus();
+    });
+    $("[data-isi-contoh]", form).addEventListener("click", function () {
+      prosesForm(form, function () { return panggil("siapkanRencana", { tim: timId, bulan: d.bulan, sumber: "contoh" }).then(pakaiHasilMonev); }, "Contoh rencana dimuat");
+    });
+    form.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-hapus-baris]");
+      if (b) { var tr = b.closest("tr"); if ($$("#r-isi tr").length > 1) tr.remove(); else { $(".r-kegiatan", tr).value = ""; $(".r-target", tr).value = ""; } }
+    });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var daftar = $$("#r-isi tr").map(function (tr) {
+        return { id: $(".r-id", tr).value, kegiatan: $(".r-kegiatan", tr).value, satuan: $(".r-satuan", tr).value, target: $(".r-target", tr).value };
+      }).filter(function (x) { return x.kegiatan.trim(); });
+      if (!daftar.length) { galatForm(form, "Isi minimal satu kegiatan."); return; }
+      prosesForm(form, function () { return panggil("simpanRencana", { tim: timId, bulan: d.bulan, daftar: daftar }).then(pakaiHasilMonev); }, "Rencana tersimpan");
+    });
+  }
+
+  /* ---------------- dialog: isian mingguan ---------------- */
+  function isiMingguHtml(timId, minggu) {
+    var d = M.data, rencana = d.rencana.filter(function (r) { return r.tim === timId; });
+    var ada = {};
+    d.monev.forEach(function (m) { if (m.tim === timId && m.minggu === minggu) ada[m.rencana] = m; });
+    return rencana.map(function (r) {
+      var m = ada[r.id] || { realisasi: "", kendala: "", status: "jalan" };
+      return '<div class="isi-keg" data-r="' + esc(r.id) + '">' +
+        '<div class="ik-judul"><b>' + esc(r.kegiatan) + '</b><span>target ' + nomorRapi(r.target) + " " + esc(r.satuan) + "</span></div>" +
+        '<div class="ik-isian"><label class="sr" for="rz-' + esc(r.id) + '">Realisasi</label>' +
+        '<input class="ik-nilai" id="rz-' + esc(r.id) + '" type="number" min="0" step="any" value="' + esc(String(m.realisasi === 0 ? 0 : m.realisasi || "")) + '" placeholder="0">' +
+        '<select class="ik-status" aria-label="Status">' + Object.keys(STATUS_MONEV).map(function (k) {
+          return '<option value="' + k + '"' + ((m.status || "jalan") === k ? " selected" : "") + ">" + STATUS_MONEV[k] + "</option>";
+        }).join("") + "</select></div>" +
+        '<input class="ik-kendala" type="text" value="' + esc(m.kendala || "") + '" placeholder="Kendala atau catatan (boleh kosong)" maxlength="300"></div>';
+    }).join("");
+  }
+  function dialogRealisasi(timId) {
+    var d = M.data, t = null;
+    d.tim.forEach(function (x) { if (x.id === timId) t = x; });
+    if (!t) return;
+    if (!d.rencana.some(function (r) { return r.tim === timId; })) { toast("Susun rencana bulan ini dulu.", "alert"); dialogRencana(timId); return; }
+    var minggu = d.mingguKini || d.minggu.length;
+    bukaDialog(
+      '<form id="f-isi" novalidate>' + kepalaDlg("Isi monev " + t.nama, esc(namaBulan(d.bulan))) +
+      '<div class="dlg-isi"><p class="galat" hidden></p>' +
+      '<div class="isian"><label for="i-minggu">Minggu</label><select class="pilih" id="i-minggu">' +
+      d.minggu.map(function (w) {
+        return '<option value="' + w.n + '"' + (w.n === minggu ? " selected" : "") + ">Minggu " + w.n + " · " + tglRingkas(w.awal) + "–" + tglRingkas(w.akhir) + (w.n === d.mingguKini ? " (minggu ini)" : "") + "</option>";
+      }).join("") + "</select></div>" +
+      '<div id="i-isi">' + isiMingguHtml(timId, minggu) + "</div>" +
+      '<p class="dlg-ket">Isi jumlah yang selesai minggu itu, bukan jumlah kumulatif. Kolom kendala boleh dikosongkan.</p></div>' +
+      kakiDlg("", "Simpan") + "</form>", true);
+    var form = $("#f-isi");
+    $("#i-minggu").addEventListener("change", function () { $("#i-isi").innerHTML = isiMingguHtml(timId, +this.value); });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var isi = $$("#i-isi .isi-keg").map(function (el) {
+        return { rencana: el.getAttribute("data-r"), realisasi: $(".ik-nilai", el).value || 0, status: $(".ik-status", el).value, kendala: $(".ik-kendala", el).value };
+      });
+      prosesForm(form, function () {
+        return panggil("simpanRealisasi", { tim: timId, bulan: d.bulan, minggu: +$("#i-minggu").value, isi: isi }).then(pakaiHasilMonev);
+      }, "Monev minggu ini tersimpan");
+    });
+  }
+
+  /* ---------------- dialog: kelola tim ---------------- */
+  function dialogKelolaTim() {
+    var d = M.data;
+    bukaDialog(kepalaDlg("Tim monev", "Atur nama tim dan siapa ketuanya. Ketua tim boleh mengisi monev timnya sendiri.") +
+      '<div class="dlg-isi"><div class="tabel-gulir"><table class="tabel"><thead><tr><th>Tim</th><th>Ketua</th><th>Status</th><th></th></tr></thead><tbody>' +
+      d.tim.map(function (t) {
+        return "<tr><td><b>" + esc(t.nama) + "</b><small>" + esc(t.singkat || "") + "</small></td><td>" + esc(t.ketuaNama || t.ketua || "—") +
+          '</td><td>' + (t.aktif ? '<span class="pil baik">aktif</span>' : '<span class="pil">nonaktif</span>') +
+          '</td><td><button class="ikon-kecil" type="button" data-aksi="monev-tim-ubah" data-id="' + esc(t.id) + '" aria-label="Ubah ' + esc(t.nama) + '">' + ic("pencil") + "</button></td></tr>";
+      }).join("") + "</tbody></table></div></div>" +
+      '<div class="dlg-kaki"><div><button class="tombol hantu" type="button" data-aksi="monev-tim-baru">' + ic("plus") + "Tambah tim</button></div>" +
+      '<div class="dlg-kaki-kanan"><button class="tombol" type="button" data-aksi="tutup">Selesai</button></div></div>', true);
+  }
+  function dialogTimForm(t) {
+    var d = M.data, baru = !t;
+    t = t || { id: "", nama: "", singkat: "", ketua: "", warna: "#1C5AA3", aktif: true };
+    bukaDialog('<form id="f-tim" novalidate>' + kepalaDlg(baru ? "Tambah tim" : "Ubah " + t.nama, "") +
+      '<div class="dlg-isi"><p class="galat" hidden></p>' +
+      '<div class="isian"><label for="t-nama">Nama tim</label><input id="t-nama" type="text" value="' + esc(t.nama) + '" maxlength="100" required></div>' +
+      '<div class="isian"><label for="t-singkat">Keterangan singkat</label><input id="t-singkat" type="text" value="' + esc(t.singkat || "") + '" maxlength="160" placeholder="Cakupan pekerjaan tim"></div>' +
+      '<div class="isian"><label for="t-ketua">Email/ID akun ketua</label><input id="t-ketua" type="text" value="' + esc(t.ketua || "") + '" maxlength="80" placeholder="nama@bps.go.id"><small class="isian-ket">Pakai email/ID akun PINTU-nya. Ketua tim otomatis boleh mengisi monev timnya.</small></div>' +
+      '<div class="isian"><label for="t-warna">Warna</label><input id="t-warna" type="color" value="' + esc(t.warna || "#1C5AA3") + '"></div>' +
+      '<label class="centang"><input id="t-aktif" type="checkbox"' + (t.aktif !== false ? " checked" : "") + "> Tim aktif (tampil di dasbor)</label></div>" +
+      kakiDlg(baru ? "" : '<button class="tombol bahaya hantu" type="button" id="t-hapus">Hapus</button>', "Simpan") + "</form>", false);
+    var form = $("#f-tim");
+    if (!baru) {
+      pasangHapus($("#t-hapus"), "Yakin hapus?", function () {
+        return panggil("hapusTim", { id: t.id, bulan: d.bulan }).then(function (res) { tutupDialog(); pakaiHasilMonev(res); toast("Tim dihapus", "check"); });
+      });
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var isi = {
+        id: t.id, nama: $("#t-nama").value, singkat: $("#t-singkat").value,
+        ketua: $("#t-ketua").value, warna: $("#t-warna").value, aktif: $("#t-aktif").checked
+      };
+      if (!isi.nama.trim()) { galatForm(form, "Nama tim wajib diisi."); return; }
+      prosesForm(form, function () { return panggil("simpanTim", { tim: isi, bulan: d.bulan }).then(pakaiHasilMonev); }, "Tim tersimpan");
+    });
+  }
+
+  function siapkanRencanaCepat(tombol, timId, sumber) {
+    var d = M.data, label = tombol.textContent;
+    tombol.disabled = true; tombol.textContent = "Menyiapkan…";
+    panggil("siapkanRencana", { tim: timId, bulan: d.bulan, sumber: sumber }).then(function (res) {
+      pakaiHasilMonev(res);
+      toast(sumber === "contoh" ? "Contoh rencana dimuat — silakan sesuaikan targetnya" : "Rencana bulan lalu disalin", "check");
+    }, function (err) {
+      tombol.disabled = false; tombol.textContent = label;
+      toast(err.message, "alert");
+    });
+  }
+
+  /* ---------------- unduh CSV ---------------- */
+  function unduhTeks(namaBerkas, teks) {
+    var blob = new Blob(["﻿" + teks], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = namaBerkas;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function selCsv(v) { var s = String(v == null ? "" : v); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function csvMonev(timId) {
+    var d = M.data;
+    if (!d) return;
+    var tim = d.tim.filter(function (t) { return !timId || t.id === timId; });
+    var isian = {};
+    d.monev.forEach(function (m) { isian[m.rencana + "|" + m.minggu] = m; });
+    var baris = [["Tim", "Ketua", "Kegiatan", "Satuan", "Target"].concat(d.minggu.map(function (w) { return "M" + w.n; })).concat(["Realisasi", "Persen", "Kendala terakhir"])];
+    tim.forEach(function (t) {
+      d.rencana.filter(function (r) { return r.tim === t.id; }).forEach(function (r) {
+        var total = 0, kendala = "";
+        var sel = d.minggu.map(function (w) {
+          var m = isian[r.id + "|" + w.n];
+          if (m) { total += m.realisasi; if (m.kendala) kendala = "M" + w.n + ": " + m.kendala; }
+          return m ? m.realisasi : "";
+        });
+        baris.push([t.nama, t.ketuaNama || t.ketua || "", r.kegiatan, r.satuan, r.target].concat(sel).concat([total, persen(total, r.target) + "%", kendala]));
+      });
+    });
+    if (baris.length === 1) { toast("Belum ada rencana untuk diunduh.", "alert"); return; }
+    unduhTeks("monev-" + (timId ? timId + "-" : "") + d.bulan + ".csv", baris.map(function (r) { return r.map(selCsv).join(";"); }).join("\n"));
+    toast("CSV diunduh", "download");
+  }
+
+  /* =================================================================
      PERISTIWA
      ================================================================= */
   function siapkanTampilan() {
@@ -1267,6 +1664,18 @@
           case "keluar": keluar(); return;
           case "baru-lagi": baruState.tampil += 150; renderTerbaru(); return;
           case "terbaru-kat": baruState.kat = t.getAttribute("data-id"); location.hash = "#/terbaru"; return;
+          case "monev-mundur": gantiBulanMonev(-1); return;
+          case "monev-maju": gantiBulanMonev(1); return;
+          case "monev-kini": M.bulan = M.data ? M.data.bulanKini : ""; M.data = null; renderRute(); return;
+          case "monev-ulang": M.galat = ""; M.data = null; renderRute(); return;
+          case "monev-csv": csvMonev(t.getAttribute("data-id") || ""); return;
+          case "monev-isi": dialogRealisasi(t.getAttribute("data-id")); return;
+          case "monev-rencana": dialogRencana(t.getAttribute("data-id")); return;
+          case "monev-contoh": siapkanRencanaCepat(t, t.getAttribute("data-id"), "contoh"); return;
+          case "monev-salin": siapkanRencanaCepat(t, t.getAttribute("data-id"), "lalu"); return;
+          case "monev-tim-kelola": dialogKelolaTim(); return;
+          case "monev-tim-baru": dialogTimForm(null); return;
+          case "monev-tim-ubah": dialogTimForm((M.data.tim || []).filter(function (x) { return x.id === t.getAttribute("data-id"); })[0]); return;
         }
       }
       var b;
@@ -1275,6 +1684,7 @@
       else if ((b = e.target.closest("[data-bgrup]"))) { baruState.grup = b.getAttribute("data-bgrup"); baruState.tampil = 100; renderTerbaru(); }
       else if ((b = e.target.closest("[data-furut]"))) { folderState.urut = b.getAttribute("data-furut"); renderFolder(folderState.n); }
     });
+    document.addEventListener("input", function (e) { if (e.target.id === "kanal-q") { kanalQ = e.target.value; saringKanal(); } });
     document.addEventListener("change", function (e) { if (e.target.id === "baru-kat") { baruState.kat = e.target.value; baruState.tampil = 100; renderTerbaru(); } });
     window.addEventListener("hashchange", keRute);
     keRute();
