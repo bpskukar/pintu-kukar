@@ -1598,7 +1598,8 @@
     document.addEventListener("click", function (e) { if (!e.target.closest(".akun-bungkus")) menuAkun(false); });
     $("#tombol-kelola").addEventListener("click", function () { S.kelola = !S.kelola; renderKepala(); renderRute(); toast(S.kelola ? "Mode kelola aktif" : "Mode kelola selesai", "pencil"); });
     if (K.pintar) $("#tautan-pintar").href = K.pintar;
-    if (K.peta) $$("#tautan-peta, #tautan-peta-hp, #tautan-peta-kaki").forEach(function (a) { a.href = K.peta; });
+    if (K.peta) $$("#tautan-peta").forEach(function (a) { a.href = K.peta; });
+    if (K.satuKukar) $$("#tautan-satukukar, #tautan-satukukar-kaki").forEach(function (a) { a.href = K.satuKukar; });
 
     /* pencarian utama */
     var q = $("#q"), tunda;
