@@ -619,3 +619,14 @@ a.tombol-ikon { display: inline-grid; place-items: center; text-decoration: none
 .panduan-teks ul + h3, .panduan-teks ol + h3 { margin-top: 18px; }
 .pd-tip { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--brand-soft); border-left: 3px solid var(--brand-2); font-size: 14.5px; }
 .panduan-teks p.pd-tip { color: var(--ink-2); }
+
+.monev-keg { margin-bottom: 18px; }
+.monev-keg h2 { font: 700 15px var(--f-display); margin-bottom: 2px; }
+.monev-keg-ket { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.monev-keg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.monev-keg-kartu { display: flex; align-items: center; gap: 12px; padding: 13px 14px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--brand-2); border-radius: 13px; transition: border-color .12s, transform .12s; }
+.monev-keg-kartu:hover { border-color: var(--brand-2); transform: translateY(-1px); }
+.mkk-ikon { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-2); font-size: 18px; }
+.mkk-teks { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mkk-teks b { font-size: 14.5px; }
+.mkk-teks small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }

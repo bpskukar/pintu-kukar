@@ -160,7 +160,16 @@ function doPost(e) {
       case 'cariIsi': return json_(cariIsi_(b.q));
       case 'gantiSandi': return json_(gantiSandi_(u, b));
       case 'perbarui': return json_(perbaruiDariWeb_(u));
-      case 'monev': return json_(monevData_(u, b));
+      /* Monev kegiatan (Monev.gs) — halaman monev/cleaning-se2026.html */
+      case 'monev':
+        if (typeof monev_ !== 'function') throw new Error('Monev kegiatan belum terpasang: berkas Monev.gs tidak ada di proyek Apps Script ini.');
+        return json_(monev_(u, b));
+      case 'monevAtur':
+        wajibPeran_(u, 'pengelola');
+        if (typeof monevAtur_ !== 'function') throw new Error('Monev kegiatan belum terpasang: berkas Monev.gs tidak ada di proyek Apps Script ini.');
+        return json_(denganKunci_(function () { return monevAtur_(u, b); }));
+      /* Monev mingguan tim kerja (di berkas ini) */
+      case 'monevTim': return json_(monevData_(u, b));
       case 'simpanRencana': return json_(denganKunci_(function () { return simpanRencana_(u, b); }));
       case 'siapkanRencana': return json_(denganKunci_(function () { return siapkanRencana_(u, b); }));
       case 'simpanRealisasi': return json_(denganKunci_(function () { return simpanRealisasi_(u, b); }));

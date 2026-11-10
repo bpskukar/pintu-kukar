@@ -1250,7 +1250,7 @@
   function muatMonev(lanjut, bulan) {
     if (M.muat) return;
     M.muat = true; M.galat = "";
-    panggil("monev", { bulan: bulan || M.bulan || "" }).then(function (res) {
+    panggil("monevTim", { bulan: bulan || M.bulan || "" }).then(function (res) {
       M.muat = false; M.data = res; M.bulan = res.bulan; lanjut();
     }, function (err) {
       M.muat = false; M.galat = (err && err.message) || "Gagal memuat monev.";
@@ -1319,6 +1319,7 @@
       kpiMonev(angka(kendala), "Kegiatan terkendala", kendala ? "Perlu dibahas di rapat" : "Tidak ada laporan kendala", kendala ? "kurang" : "baik") +
       kpiMonev(angka(tanpaRencana), "Tim belum punya rencana", tanpaRencana ? "Rencana bulan ini belum disusun" : "Semua tim sudah menyusun rencana", tanpaRencana ? "sedang" : "baik") +
       "</div>" +
+      htmlMonevKegiatan() +
       '<section class="kotak monev-tren"><h2>Target dan realisasi 6 bulan</h2><div class="tren-bar">' +
       d.tren.map(function (x) {
         return '<div class="tren-kol' + (x.bulan === d.bulan ? " kini" : "") + '"><div class="tren-batang">' +
@@ -1328,6 +1329,17 @@
       }).join("") + '</div><p class="tren-ket"><i class="kotak-t"></i>Target <i class="kotak-r"></i>Realisasi</p></section>' +
       '<section class="monev-daftar">' + tim.map(function (t) { return kartuTim(t, per[t.id], d); }).join("") +
       (tim.length ? "" : '<div class="kosong"><p>Belum ada tim aktif.</p></div>') + "</section></div>";
+  }
+  function htmlMonevKegiatan() {
+    var daftar = (window.PINTU_MONEV_KEGIATAN || []).filter(function (x) { return x && x.url && x.nama; });
+    if (!daftar.length) return "";
+    return '<section class="monev-keg"><h2>Monev kegiatan</h2><p class="monev-keg-ket">Pemantauan kegiatan tertentu, terpisah dari rencana rutin tim di bawah.</p><div class="monev-keg-grid">' +
+      daftar.map(function (x) {
+        return '<a class="monev-keg-kartu" href="' + esc(x.url) + '">' +
+          '<span class="mkk-ikon">' + ic(x.ikon || "chart") + "</span>" +
+          '<span class="mkk-teks"><b>' + esc(x.nama) + "</b>" + (x.ket ? "<small>" + esc(x.ket) + "</small>" : "") + "</span>" +
+          (x.status ? '<span class="pil baik">' + esc(x.status) + "</span>" : "") + "</a>";
+      }).join("") + "</div></section>";
   }
   function kpiMonev(angkaBesar, judul, ket, nada) {
     return '<div class="kpi ' + nada + '"><b>' + esc(String(angkaBesar)) + "</b><span>" + esc(judul) + "</span><small>" + esc(ket) + "</small></div>";
