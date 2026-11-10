@@ -508,8 +508,9 @@
   var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "kanal", "monev", "monev-tim", "panduan"];
   var rute = { nama: "beranda", arg: "" };
   function tampilkan(nama) {
-    TAMPILAN.forEach(function (t) { $("#v-" + t).hidden = t !== nama; });
-    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : nama === "monev-tim" ? "monev" : nama === "folder" ? "" : nama;
+    var wadah = nama === "monev-dasbor" ? "monev" : nama;
+    TAMPILAN.forEach(function (t) { $("#v-" + t).hidden = t !== wadah; });
+    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : (nama === "monev-tim" || nama === "monev-dasbor") ? "monev" : nama === "folder" ? "" : nama;
     $$("[data-nav]").forEach(function (a) { a.classList.toggle("aktif", a.getAttribute("data-nav") === navNama); });
   }
   function bacaRute() {
@@ -519,7 +520,8 @@
     if ((m = h.match(/^#\/f\/(\d+)/))) return { nama: "folder", arg: +m[1] };
     if (/^#\/kategori/.test(h)) return { nama: "kategori-semua" };
     if (/^#\/terbaru/.test(h)) return { nama: "terbaru" };
-    if ((m = h.match(/^#\/monev\/([\w-]+)/))) return { nama: "monev-tim", arg: m[1] };
+    if ((m = h.match(/^#\/monev\/tim\/([\w-]+)/))) return { nama: "monev-tim", arg: m[1] };
+    if (/^#\/monev\/tim/.test(h)) return { nama: "monev-dasbor" };
     if (/^#\/monev/.test(h)) return { nama: "monev" };
     if (/^#\/kanal/.test(h)) return { nama: "kanal" };
     if (/^#\/panduan/.test(h)) return { nama: "panduan" };
@@ -543,7 +545,8 @@
     else if (rute.nama === "folder") renderFolder(rute.arg);
     else if (rute.nama === "terbaru") renderTerbaru();
     else if (rute.nama === "kanal") renderKanal();
-    else if (rute.nama === "monev") renderMonev();
+    else if (rute.nama === "monev") renderMonevPilih();
+    else if (rute.nama === "monev-dasbor") renderMonev();
     else if (rute.nama === "monev-tim") renderMonevTim(rute.arg);
   }
   function renderSemua() { renderStatus(); isiPilihanKategori(); renderRute(); }
@@ -1307,7 +1310,7 @@
     var maxTren = Math.max.apply(null, d.tren.map(function (x) { return Math.max(x.target, x.realisasi); }).concat([1]));
 
     v.innerHTML =
-      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Monev</p>' +
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span><a href="#/monev">Monev</a><span aria-hidden="true">/</span>Mingguan tim</p>' +
       '<div class="monev-kepala"><div><h1>Monev mingguan tim</h1><p class="kepala-sub">Rencana dan target disusun bulanan, realisasinya dicatat tiap minggu oleh ketua tim.</p></div>' +
       '<div class="monev-alat">' + pilihBulanHtml(d) +
       '<button class="tombol hantu kecil" type="button" data-aksi="monev-csv">' + ic("download") + "Unduh CSV</button>" +
@@ -1319,7 +1322,6 @@
       kpiMonev(angka(kendala), "Kegiatan terkendala", kendala ? "Perlu dibahas di rapat" : "Tidak ada laporan kendala", kendala ? "kurang" : "baik") +
       kpiMonev(angka(tanpaRencana), "Tim belum punya rencana", tanpaRencana ? "Rencana bulan ini belum disusun" : "Semua tim sudah menyusun rencana", tanpaRencana ? "sedang" : "baik") +
       "</div>" +
-      htmlMonevKegiatan() +
       '<section class="kotak monev-tren"><h2>Target dan realisasi 6 bulan</h2><div class="tren-bar">' +
       d.tren.map(function (x) {
         return '<div class="tren-kol' + (x.bulan === d.bulan ? " kini" : "") + '"><div class="tren-batang">' +
@@ -1329,6 +1331,25 @@
       }).join("") + '</div><p class="tren-ket"><i class="kotak-t"></i>Target <i class="kotak-r"></i>Realisasi</p></section>' +
       '<section class="monev-daftar">' + tim.map(function (t) { return kartuTim(t, per[t.id], d); }).join("") +
       (tim.length ? "" : '<div class="kosong"><p>Belum ada tim aktif.</p></div>') + "</section></div>";
+  }
+  function kartuPilihMonev(x) {
+    return '<a class="pilih-kartu" href="' + esc(x.url) + '">' +
+      '<span class="pk-ikon" style="background:' + esc(x.warnaLatar || "var(--brand-soft)") + ';color:' + esc(x.warna || "var(--brand-2)") + '">' + ic(x.ikon || "chart") + "</span>" +
+      '<span class="pk-teks"><span class="pk-judul"><b>' + esc(x.nama) + "</b>" + (x.status ? '<span class="pil baik">' + esc(x.status) + "</span>" : "") + "</span>" +
+      (x.ket ? "<small>" + esc(x.ket) + "</small>" : "") + "</span>" +
+      '<span class="pk-panah">' + ic("arrowR") + "</span></a>";
+  }
+  function renderMonevPilih() {
+    var v = $("#v-monev");
+    var daftar = [{
+      nama: "Monev mingguan tim kerja",
+      ket: "Rencana dan target bulanan tiap tim, realisasinya dicatat tiap minggu oleh ketua tim.",
+      url: "#/monev/tim", ikon: "users", warnaLatar: "var(--accent-soft)", warna: "var(--warn)"
+    }].concat((window.PINTU_MONEV_KEGIATAN || []).filter(function (x) { return x && x.url && x.nama; }));
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Monev</p>' +
+      '<h1>Monev</h1><p class="kepala-sub">Pilih monev yang ingin dibuka. Datanya baru diambil setelah dipilih, jadi halaman ini ringan.</p></div></section>' +
+      '<div class="bungkus isi-halaman"><div class="pilih-grid">' + daftar.map(kartuPilihMonev).join("") + "</div></div>";
   }
   function htmlMonevKegiatan() {
     var daftar = (window.PINTU_MONEV_KEGIATAN || []).filter(function (x) { return x && x.url && x.nama; });
@@ -1350,7 +1371,7 @@
       var isi = p.minggu[w.n] ? "lapor" : (!p.kegiatan || (d.mingguKini && w.n > d.mingguKini) ? "nanti" : "telat");
       return '<span class="w ' + isi + '" title="Minggu ' + w.n + " (" + tglRingkas(w.awal) + "–" + tglRingkas(w.akhir) + ")\">" + w.n + "</span>";
     }).join("");
-    return '<a class="monev-kartu" href="#/monev/' + esc(t.id) + '">' +
+    return '<a class="monev-kartu" href="#/monev/tim/' + esc(t.id) + '">' +
       '<span class="mk-warna" style="background:' + esc(t.warna || "#1C5AA3") + '"></span>' +
       '<span class="mk-isi"><span class="mk-judul"><b>' + esc(t.nama) + "</b>" + (p.kendala ? '<span class="tanda kendala">' + p.kendala + " kendala</span>" : "") + "</span>" +
       '<span class="mk-ket">' + esc(t.ketuaNama || t.ketua || "Ketua belum diatur") + " · " + (p.kegiatan ? p.kegiatan + " kegiatan" : "rencana belum disusun") + "</span>" +
@@ -1365,7 +1386,7 @@
     if (!M.data) { if (M.galat) galatHtmlMonev(v); else { muatHtmlMonev(v); muatMonev(function () { renderMonevTim(id); }); } return; }
     var d = M.data, t = null;
     d.tim.forEach(function (x) { if (x.id === id) t = x; });
-    if (!t) { v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>Tim tidak ditemukan.</p><p><a class="tombol" href="#/monev">Kembali ke monev</a></p></div></div>'; return; }
+    if (!t) { v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>Tim tidak ditemukan.</p><p><a class="tombol" href="#/monev/tim">Kembali ke daftar tim</a></p></div></div>'; return; }
     var rencana = d.rencana.filter(function (r) { return r.tim === id; });
     var isian = {};
     d.monev.forEach(function (m) { if (m.tim === id) { isian[m.rencana + "|" + m.minggu] = m; } });
@@ -1392,7 +1413,7 @@
       }).join("");
 
     v.innerHTML =
-      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/monev">Monev</a><span aria-hidden="true">/</span>' + esc(t.nama) + "</p>" +
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/monev">Monev</a><span aria-hidden="true">/</span><a href="#/monev/tim">Mingguan tim</a><span aria-hidden="true">/</span>' + esc(t.nama) + "</p>" +
       '<div class="monev-kepala"><div><h1>' + esc(t.nama) + "</h1><p class=\"kepala-sub\">" + esc(t.singkat || "") + (t.singkat ? " · " : "") + "Ketua: " + esc(t.ketuaNama || t.ketua || "belum diatur") + "</p></div>" +
       '<div class="monev-alat">' + pilihBulanHtml(d) +
       (t.boleh ? '<button class="tombol kecil" type="button" data-aksi="monev-isi" data-id="' + esc(t.id) + '">' + ic("pencil") + "Isi minggu ini</button>" : "") +

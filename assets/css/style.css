@@ -630,3 +630,13 @@ a.tombol-ikon { display: inline-grid; place-items: center; text-decoration: none
 .mkk-teks { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mkk-teks b { font-size: 14.5px; }
 .mkk-teks small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+
+.pilih-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.pilih-kartu { display: flex; align-items: center; gap: 14px; padding: 18px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); transition: border-color .12s, transform .12s; }
+.pilih-kartu:hover { border-color: var(--brand-2); transform: translateY(-2px); }
+.pk-ikon { width: 48px; height: 48px; flex: none; border-radius: 13px; display: grid; place-items: center; font-size: 23px; }
+.pk-teks { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pk-judul { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pk-teks b { font: 700 16.5px var(--f-display); }
+.pk-teks small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.pk-panah { color: var(--muted); font-size: 19px; flex: none; }
