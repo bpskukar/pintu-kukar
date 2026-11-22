@@ -180,7 +180,7 @@ a.tombol-ikon { display: inline-grid; place-items: center; text-decoration: none
 .peran { display: inline-block; font: 600 11px/1 var(--f-body); letter-spacing: .03em; padding: 4px 7px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-2); text-transform: capitalize; }
 .peran.admin { background: var(--accent-soft); color: var(--warn); }
 .nav-hp { display: none; }
-@media (max-width: 1060px) { .merek-teks small { display: none; } }
+@media (max-width: 1319px) { .merek-teks small { display: none; } }
 @media (max-width: 960px) { .nav a { padding: 8px 9px; font-size: 13.5px; } .kepala-baris { gap: 10px; } .merek-teks { display: none; } }
 @media (max-width: 860px) { .akun-nama { display: none; } .akun-tombol { padding: 0 4px; } }
 @media (max-width: 760px) {
@@ -640,3 +640,29 @@ a.tombol-ikon { display: inline-grid; place-items: center; text-decoration: none
 .pk-teks b { font: 700 16.5px var(--f-display); }
 .pk-teks small { color: var(--muted); font-size: 13px; line-height: 1.45; }
 .pk-panah { color: var(--muted); font-size: 19px; flex: none; }
+
+/* ---------- surat tugas ---------- */
+.st-kini { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding: 20px 22px; border-radius: 16px; background: linear-gradient(135deg, var(--brand-soft) 0%, var(--surface) 70%); border: 1px solid var(--line); margin-bottom: 20px; }
+.st-label { font: 600 11.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.st-kini-teks h2 { font: 800 25px var(--f-display); margin: 4px 0 4px; }
+.st-kini-teks p { color: var(--ink-2); font-size: 14.5px; }
+.st-kini-aksi { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-tahun { margin-bottom: 20px; }
+.st-tahun h2, .st-arsip h2 { font: 700 16px var(--f-display); margin-bottom: 10px; }
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.st-bulan { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.st-bulan.kini { border-color: var(--brand-2); box-shadow: 0 0 0 1px var(--brand-2); }
+.st-bulan.kosong { background: var(--surface-2); border-style: dashed; }
+.st-buka { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink); }
+.st-nama { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.st-ket { font-size: 12.5px; color: var(--muted); }
+.st-bulan.kosong .st-nama { color: var(--muted); font-weight: 500; }
+.st-aksi { display: flex; gap: 2px; flex: none; }
+.st-catatan { color: var(--muted); font-size: 13px; margin: 4px 0 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.st-arsip-ket { color: var(--muted); font-size: 13.5px; margin-bottom: 10px; }
+.st-arsip-daftar { list-style: none; display: grid; gap: 7px; }
+.st-arsip-daftar a { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); text-decoration: none; color: var(--ink); }
+.st-arsip-daftar a:hover { border-color: var(--brand-2); }
+.st-arsip-daftar .ico { color: var(--accent); font-size: 18px; flex: none; }
+.st-arsip-daftar span { display: flex; flex-direction: column; min-width: 0; }
+.st-arsip-daftar small { color: var(--muted); font-size: 12.5px; }

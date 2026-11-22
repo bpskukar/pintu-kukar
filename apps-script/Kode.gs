@@ -57,7 +57,8 @@ var PENGATURAN_AWAL = {
   namaKantor: 'BPS Kabupaten Kutai Kartanegara',
   sertakanDibagikan: true,
   folderAbaikan: [],
-  pintasan: []
+  pintasan: [],
+  suratTugas: { akar: '', tahun: {} }
 };
 var FIELD_BERKAS = 'id,name,mimeType,parents,modifiedTime,createdTime,size,trashed,shortcutDetails(targetId,targetMimeType)';
 
@@ -170,6 +171,10 @@ function doPost(e) {
         return json_(denganKunci_(function () { return monevAtur_(u, b); }));
       /* Monev mingguan tim kerja (di berkas ini) */
       case 'monevTim': return json_(monevData_(u, b));
+      /* Surat tugas: folder bulanan tempat TU mengunggah */
+      case 'suratTugas': return json_(suratTugasData_());
+      case 'suratTugasSiapkan': return json_(denganKunci_(function () { return suratTugasSiapkan_(u, b); }));
+      case 'suratTugasSimpan': return json_(denganKunci_(function () { return suratTugasSimpan_(u, b); }));
       case 'simpanRencana': return json_(denganKunci_(function () { return simpanRencana_(u, b); }));
       case 'siapkanRencana': return json_(denganKunci_(function () { return siapkanRencana_(u, b); }));
       case 'simpanRealisasi': return json_(denganKunci_(function () { return simpanRealisasi_(u, b); }));
@@ -985,6 +990,84 @@ function catatGalat_(e) {
   var t = String(e && e.message || e).slice(0, 300);
   console.error(t);
   try { props_().setProperty('GALAT', sekarang_() + ' · ' + t); } catch (x) { /* abaikan */ }
+}
+
+/* =====================================================================
+   SURAT TUGAS — folder bulanan
+   TU mengunggah surat tugas & SPD ke folder bulan berjalan; pegawai
+   membuka folder itu dari PINTU lalu mencetak sendiri.
+   Pengaturan berbagi folder tidak diubah dari sini — admin mengaturnya
+   sendiri di Google Drive sesuai kebijakan kantor.
+   ===================================================================== */
+var ST_NAMA_AKAR = 'Surat Tugas BPS Kukar';
+var ST_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+var ST_TAHUN = [2026, 2027];
+
+function suratTugasData_() {
+  var pg = bacaPengaturan_();
+  var st = pg.suratTugas || {};
+  return {
+    ok: true,
+    akar: st.akar || '',
+    tahun: st.tahun || {},
+    daftarTahun: ST_TAHUN,
+    bulan: ST_BULAN,
+    kini: Utilities.formatDate(new Date(), zona_(), 'yyyy-MM')
+  };
+}
+
+function suratTugasSiapkan_(u, b) {
+  wajibPeran_(u, 'pengelola');
+  var pg = bacaPengaturan_(), st = pg.suratTugas || {};
+  st.tahun = st.tahun || {};
+  var akar = null;
+  if (st.akar) { try { var f = DriveApp.getFolderById(st.akar); if (!f.isTrashed()) akar = f; } catch (e) { akar = null; } }
+  if (!akar) {
+    akar = DriveApp.createFolder(ST_NAMA_AKAR);
+    akar.setDescription('Surat tugas dan SPD pegawai BPS Kabupaten Kutai Kartanegara, dikelompokkan per bulan. Diunggah oleh Tata Usaha.');
+    st.akar = akar.getId();
+  }
+  var baru = 0;
+  ST_TAHUN.forEach(function (th) {
+    var kunciTh = String(th);
+    st.tahun[kunciTh] = st.tahun[kunciTh] || {};
+    var cari = akar.getFoldersByName(kunciTh);
+    var fTh = cari.hasNext() ? cari.next() : akar.createFolder(kunciTh);
+    for (var i = 1; i <= 12; i++) {
+      var kunciBl = String(i), ada = st.tahun[kunciTh][kunciBl];
+      if (ada) { try { var cek = DriveApp.getFolderById(ada); if (!cek.isTrashed()) continue; } catch (e) { /* buat ulang */ } }
+      var nama = ('0' + i).slice(-2) + ' ' + ST_BULAN[i - 1];
+      var it = fTh.getFoldersByName(nama), fBl;
+      if (it.hasNext()) { fBl = it.next(); } else { fBl = fTh.createFolder(nama); baru++; }
+      st.tahun[kunciTh][kunciBl] = fBl.getId();
+    }
+  });
+  stSimpan_(st);
+  catat_(u.nama, 'Siapkan folder surat tugas', baru + ' folder bulan baru dibuat');
+  return { ok: true, dibuat: baru, data: suratTugasData_() };
+}
+
+function stSimpan_(st) { setPengaturan_('suratTugas', st); }
+
+function suratTugasSimpan_(u, b) {
+  wajibPeran_(u, 'pengelola');
+  var th = String(Math.round(+b.tahun || 0)), bl = String(Math.round(+b.bulan || 0));
+  if (ST_TAHUN.indexOf(+th) < 0 || +bl < 1 || +bl > 12) throw new Error('Tahun atau bulan tidak sah.');
+  var pg = bacaPengaturan_(), st = pg.suratTugas || {};
+  st.tahun = st.tahun || {};
+  st.tahun[th] = st.tahun[th] || {};
+  if (b.hapus) {
+    delete st.tahun[th][bl];
+    catat_(u.nama, 'Hapus folder surat tugas', ST_BULAN[+bl - 1] + ' ' + th);
+  } else {
+    var id = idDrive_(b.folder);
+    if (!id) throw new Error('Itu bukan link folder Google Drive.');
+    try { DriveApp.getFolderById(id); } catch (e) { throw new Error('Folder tidak bisa dibuka oleh akun kantor. Pastikan sudah dibagikan ke akun ini.'); }
+    st.tahun[th][bl] = id;
+    catat_(u.nama, 'Atur folder surat tugas', ST_BULAN[+bl - 1] + ' ' + th);
+  }
+  stSimpan_(st);
+  return { ok: true, data: suratTugasData_() };
 }
 
 /* =====================================================================

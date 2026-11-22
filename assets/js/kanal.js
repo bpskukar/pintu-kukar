@@ -127,3 +127,17 @@ window.PINTU_MONEV_KEGIATAN = [
     status: ""
   }
 ];
+
+/* =====================================================================
+   Arsip tautan surat tugas yang pernah dibagikan di grup WhatsApp
+   BPS KUKAR sepanjang 2026. Dipakai halaman Surat Tugas sebagai arsip,
+   supaya berkas lama tetap bisa dibuka meski folder bulanan sudah ada.
+   ===================================================================== */
+window.PINTU_SURAT_LAMA = [
+  { tgl: "2026-09-02", ket: "Surat tugas minggu pertama September", url: "https://drive.google.com/drive/folders/13UQpXf09Dv3i60LOTabQPjTT3DeOfk-J" },
+  { tgl: "2026-09-11", ket: "Surat tugas minggu kedua September", url: "https://drive.google.com/drive/folders/18JzSTVOn8x1Xhx7GlLKgBqtEnbJuG-Xe" },
+  { tgl: "2026-09-21", ket: "Surat tugas SHP, SHPED, dan revisit", url: "https://drive.google.com/drive/folders/1jF-t9Y3gjOqGs_DxCCDN61ZnBGmAkYI3" },
+  { tgl: "2026-10-01", ket: "Surat tugas minggu pertama Oktober", url: "https://drive.google.com/drive/folders/1_gh7pXMrJXropli_QPySXpPGnYLK551d" },
+  { tgl: "2026-10-14", ket: "Surat tugas revisit dan Ubinan (dipakai ulang 19 Okt)", url: "https://drive.google.com/drive/folders/1f4w8C32OH2FFWJmCxE4QrHevzz1WD52o" },
+  { tgl: "2026-11-04", ket: "Surat tugas November (dipakai ulang 11 Nov)", url: "https://drive.google.com/drive/folders/1VKeXT-NL9QF6Y9joIc4KKRb0yhwq_wR8" }
+];

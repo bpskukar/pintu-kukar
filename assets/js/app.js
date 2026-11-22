@@ -505,7 +505,7 @@
   /* =================================================================
      RUTE
      ================================================================= */
-  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "kanal", "monev", "monev-tim", "panduan"];
+  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "surat", "kanal", "monev", "monev-tim", "panduan"];
   var rute = { nama: "beranda", arg: "" };
   function tampilkan(nama) {
     var wadah = nama === "monev-dasbor" ? "monev" : nama;
@@ -524,6 +524,7 @@
     if (/^#\/monev\/tim/.test(h)) return { nama: "monev-dasbor" };
     if (/^#\/monev/.test(h)) return { nama: "monev" };
     if (/^#\/kanal/.test(h)) return { nama: "kanal" };
+    if (/^#\/surat/.test(h)) return { nama: "surat" };
     if (/^#\/panduan/.test(h)) return { nama: "panduan" };
     if (/^#pd-/.test(h)) return { nama: "panduan", gulir: h.slice(1) };
     if ((m = h.match(/^#\/cari\/(.*)$/))) return { nama: "beranda", q: decodeURIComponent(m[1]) };
@@ -545,6 +546,7 @@
     else if (rute.nama === "folder") renderFolder(rute.arg);
     else if (rute.nama === "terbaru") renderTerbaru();
     else if (rute.nama === "kanal") renderKanal();
+    else if (rute.nama === "surat") renderSuratTugas();
     else if (rute.nama === "monev") renderMonevPilih();
     else if (rute.nama === "monev-dasbor") renderMonev();
     else if (rute.nama === "monev-tim") renderMonevTim(rute.arg);
@@ -652,14 +654,22 @@
   }
   function renderHasil() {
     var q = S.q.trim();
-    var r = mesin.cari(q, opsiCari());
+    /* Tanpa kata kunci, "paling cocok" tidak ada artinya: urutkan menurut yang terbaru. */
+    var tanpaQ = !q;
+    var opsi = opsiCari();
+    if (tanpaQ) opsi.urut = "baru";
+    var r = mesin.cari(q, opsi);
     hasilTerakhir = r;
     pilihKb = -1;
     var total = r.total;
     var teks = !mesin.item.length ? (S.muatIndeks ? "Mengunduh daftar berkas…" : "Daftar berkas belum tersedia.")
-      : total ? "<b>" + angka(total) + "</b> hasil" + (q ? " untuk “" + esc(q) + "”" : "") : "";
+      : total ? "<b>" + angka(total) + "</b> " + (q ? "hasil untuk “" + esc(q) + "”" : "berkas") : "";
     $("#hasil-jumlah").innerHTML = teks;
-    $$(".hasil-urut button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-urut") === S.urut ? "true" : "false"); });
+    $$(".hasil-urut button").forEach(function (b) {
+      var u = b.getAttribute("data-urut");
+      b.disabled = tanpaQ && u === "cocok";
+      b.setAttribute("aria-pressed", u === (tanpaQ ? "baru" : S.urut) ? "true" : "false");
+    });
     var tampil = r.hasil.slice(0, S.tampil);
     var daftar = $("#daftar-hasil");
     if (!total && mesin.item.length) {
@@ -1233,6 +1243,120 @@
   }
 
   /* =================================================================
+     SURAT TUGAS — folder bulanan
+     ================================================================= */
+  var ST = { data: null, muat: false, galat: "" };
+  function stUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
+  function stMuat(lanjut) {
+    if (ST.muat) return;
+    ST.muat = true; ST.galat = "";
+    panggil("suratTugas", {}).then(function (res) { ST.muat = false; ST.data = res; lanjut(); },
+      function (err) {
+        ST.muat = false;
+        ST.galat = (err && err.message) || "Gagal memuat surat tugas.";
+        if (/Aksi tidak dikenal/i.test(ST.galat)) ST.galat = "Apps Script masih versi lama. Admin perlu menempel Kode.gs terbaru lalu Terapkan → Kelola deployment → Versi baru.";
+        lanjut();
+      });
+  }
+  function stJumlah(id) {
+    var n = mesin.idKeNomor[id];
+    if (!n) return -1;
+    return mesin.isiFolder(n).length;
+  }
+  function stKartuBulan(th, bl, id, kini) {
+    var nama = ST.data.bulan[bl - 1], kunci = th + "-" + ("0" + bl).slice(-2);
+    var ini = kunci === kini, jml = id ? stJumlah(id) : -1;
+    if (!id) {
+      return '<div class="st-bulan kosong' + (ini ? " kini" : "") + '"><span class="st-nama">' + esc(nama) + "</span>" +
+        '<span class="st-ket">belum ada folder</span>' +
+        (peranMin("pengelola") ? '<button class="tombol hantu kecil" type="button" data-aksi="st-atur" data-th="' + th + '" data-bl="' + bl + '">Atur</button>' : "") + "</div>";
+    }
+    return '<div class="st-bulan' + (ini ? " kini" : "") + '">' +
+      '<a class="st-buka" href="' + esc(stUrl(id)) + '" target="_blank" rel="noopener"><span class="st-nama">' + esc(nama) + (ini ? ' <span class="pil baik">bulan ini</span>' : "") + "</span>" +
+      '<span class="st-ket">' + (jml < 0 ? "folder siap" : jml ? angka(jml) + " berkas" : "belum ada berkas") + "</span></a>" +
+      '<div class="st-aksi"><button class="ikon-kecil" type="button" data-aksi="salin" data-url="' + esc(stUrl(id)) + '" title="Salin link ' + esc(nama) + '" aria-label="Salin link ' + esc(nama) + '">' + ic("copy") + "</button>" +
+      (peranMin("pengelola") ? '<button class="ikon-kecil" type="button" data-aksi="st-atur" data-th="' + th + '" data-bl="' + bl + '" title="Ganti folder" aria-label="Ganti folder ' + esc(nama) + '">' + ic("pencil") + "</button>" : "") + "</div></div>";
+  }
+  function renderSuratTugas() {
+    var v = $("#v-surat");
+    if (!ST.data) {
+      if (ST.galat) v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>' + esc(ST.galat) + '</p><p><button class="tombol" type="button" data-aksi="st-ulang">Coba lagi</button></p></div></div>';
+      else { v.innerHTML = '<div class="bungkus isi-halaman"><p class="gerbang-muat"><span class="putar" aria-hidden="true"></span>Memuat surat tugas…</p></div>'; stMuat(renderSuratTugas); }
+      return;
+    }
+    var d = ST.data, kini = d.kini, thKini = kini.slice(0, 4), blKini = +kini.slice(5, 7);
+    var idKini = (d.tahun[thKini] || {})[String(blKini)] || "";
+    var jmlKini = idKini ? stJumlah(idKini) : -1;
+    var lama = (window.PINTU_SURAT_LAMA || []).slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); });
+    var belum = 0;
+    d.daftarTahun.forEach(function (th) { for (var i = 1; i <= 12; i++) if (!((d.tahun[String(th)] || {})[String(i)])) belum++; });
+
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Surat Tugas</p>' +
+      "<h1>Surat Tugas</h1><p class=\"kepala-sub\">Sejak 2026 surat tugas dan SPD tidak dicetak Tata Usaha. Berkasnya diunggah ke folder bulan berjalan di bawah ini, lalu dicetak sendiri oleh pegawai.</p></div></section>" +
+      '<div class="bungkus isi-halaman">' +
+      (idKini
+        ? '<section class="st-kini"><div class="st-kini-teks"><span class="st-label">Bulan berjalan</span><h2>' + esc(d.bulan[blKini - 1]) + " " + esc(thKini) + "</h2>" +
+          "<p>" + (jmlKini < 0 ? "Folder siap. Daftar isinya muncul di PINTU setelah pembaruan berikutnya." : jmlKini ? "<b>" + angka(jmlKini) + "</b> berkas di dalamnya." : "Belum ada berkas bulan ini.") + "</p></div>" +
+          '<div class="st-kini-aksi"><a class="tombol" href="' + esc(stUrl(idKini)) + '" target="_blank" rel="noopener">' + ic("folder") + "Buka folder bulan ini</a>" +
+          '<button class="tombol hantu" type="button" data-aksi="salin" data-url="' + esc(stUrl(idKini)) + '">' + ic("copy") + "Salin link untuk TU</button></div></section>"
+        : '<section class="kosong"><p><b>Folder bulan ini belum ada.</b></p><p>' +
+          (peranMin("pengelola") ? "Klik tombol di bawah untuk membuat folder bulanan 2026 dan 2027 sekaligus." : "Hubungi admin untuk menyiapkan foldernya.") + "</p>" +
+          (peranMin("pengelola") ? '<p class="kosong-aksi"><button class="tombol" type="button" data-aksi="st-siapkan">Siapkan folder 2026 &amp; 2027</button></p>' : "") + "</section>") +
+      (peranMin("pengelola") && idKini && belum
+        ? '<p class="st-catatan">' + belum + " bulan belum punya folder. " +
+          '<button class="tombol hantu kecil" type="button" data-aksi="st-siapkan">Lengkapi sekarang</button></p>'
+        : "") +
+      d.daftarTahun.map(function (th) {
+        var peta = d.tahun[String(th)] || {}, isi = "";
+        for (var i = 1; i <= 12; i++) isi += stKartuBulan(String(th), i, peta[String(i)] || "", kini);
+        return '<section class="st-tahun"><h2>' + th + "</h2><div class=\"st-grid\">" + isi + "</div></section>";
+      }).join("") +
+      (lama.length
+        ? '<section class="st-arsip"><h2>Arsip tautan lama</h2><p class="st-arsip-ket">Folder yang pernah dibagikan di grup WhatsApp sepanjang 2026, sebelum folder bulanan ini dipakai.</p><ul class="st-arsip-daftar">' +
+          lama.map(function (x) {
+            var t = x.tgl.split("-");
+            return "<li><a href=\"" + esc(x.url) + '" target="_blank" rel="noopener">' + ic("folder") + "<span><b>" + esc(x.ket) + "</b><small>dibagikan " + (+t[2]) + " " + BULAN[+t[1] - 1] + " " + t[0] + "</small></span></a></li>";
+          }).join("") + "</ul></section>"
+        : "") +
+      '<p class="st-catatan">Folder ini milik Google Drive akun kantor. Pengaturan siapa yang boleh membukanya diatur di Google Drive, bukan dari PINTU.</p></div>';
+  }
+  function stSiapkan(tombol) {
+    var label = tombol.textContent;
+    tombol.disabled = true; tombol.textContent = "Menyiapkan…";
+    panggil("suratTugasSiapkan", {}).then(function (res) {
+      ST.data = res.data; renderRute();
+      toast(res.dibuat ? res.dibuat + " folder bulanan dibuat" : "Folder bulanan sudah lengkap", "check");
+    }, function (err) {
+      tombol.disabled = false; tombol.textContent = label;
+      toast(err.message, "alert");
+    });
+  }
+  function dialogSuratBulan(th, bl) {
+    var d = ST.data, nama = d.bulan[bl - 1] + " " + th, ada = (d.tahun[String(th)] || {})[String(bl)] || "";
+    bukaDialog('<form id="f-st" novalidate>' + kepalaDlg("Folder surat tugas " + nama, "Tempel link folder Google Drive untuk bulan ini.") +
+      '<div class="dlg-isi"><p class="galat" hidden></p>' +
+      '<div class="isian"><label for="st-folder">Link folder</label><input id="st-folder" type="url" value="' + esc(ada ? stUrl(ada) : "") + '" placeholder="https://drive.google.com/drive/folders/…">' +
+      '<small class="isian-ket">Folder harus bisa dibuka oleh akun Google kantor.</small></div></div>' +
+      kakiDlg(ada ? '<button class="tombol bahaya hantu" type="button" id="st-hapus">Lepas folder</button>' : "", "Simpan") + "</form>", false);
+    var form = $("#f-st");
+    if (ada) {
+      pasangHapus($("#st-hapus"), "Yakin lepas?", function () {
+        return panggil("suratTugasSimpan", { tahun: th, bulan: bl, hapus: true }).then(function (res) {
+          tutupDialog(); ST.data = res.data; renderRute(); toast("Folder dilepas", "check");
+        });
+      });
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      prosesForm(form, function () {
+        return panggil("suratTugasSimpan", { tahun: th, bulan: bl, folder: $("#st-folder").value })
+          .then(function (res) { ST.data = res.data; renderRute(); });
+      }, "Folder " + nama + " tersimpan");
+    });
+  }
+
+  /* =================================================================
      MONEV MINGGUAN TIM
      ================================================================= */
   var M = { bulan: "", data: null, muat: false, galat: "" };
@@ -1698,6 +1822,9 @@
           case "keluar": keluar(); return;
           case "baru-lagi": baruState.tampil += 150; renderTerbaru(); return;
           case "terbaru-kat": baruState.kat = t.getAttribute("data-id"); location.hash = "#/terbaru"; return;
+          case "st-siapkan": stSiapkan(t); return;
+          case "st-atur": dialogSuratBulan(t.getAttribute("data-th"), +t.getAttribute("data-bl")); return;
+          case "st-ulang": ST.galat = ""; ST.data = null; renderRute(); return;
           case "monev-mundur": gantiBulanMonev(-1); return;
           case "monev-maju": gantiBulanMonev(1); return;
           case "monev-kini": M.bulan = M.data ? M.data.bulanKini : ""; M.data = null; renderRute(); return;

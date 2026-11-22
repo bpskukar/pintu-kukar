@@ -45,7 +45,7 @@
       <nav class="nav" id="nav" aria-label="Menu utama">
         <a href="#/" data-nav="beranda">Cari</a>
         <a href="#/kategori" data-nav="kategori">Kategori</a>
-        <a href="#/terbaru" data-nav="terbaru">Terbaru</a>
+        <a href="#/surat" data-nav="surat">Surat Tugas</a>
         <a href="#/monev" data-nav="monev">Monev</a>
         <a href="#/kanal" data-nav="kanal">Kanal</a>
         <a href="#/panduan" data-nav="panduan">Panduan</a>
@@ -63,7 +63,7 @@
     </div>
     <nav class="nav-hp" aria-label="Menu utama (HP)">
       <a href="#/" data-nav="beranda"><span data-ikon="search"></span>Cari</a>
-      <a href="#/kategori" data-nav="kategori"><span data-ikon="grid"></span>Kategori</a>
+      <a href="#/surat" data-nav="surat"><span data-ikon="file"></span>Surat Tugas</a>
       <a href="#/monev" data-nav="monev"><span data-ikon="chart"></span>Monev</a>
       <a href="#/kanal" data-nav="kanal"><span data-ikon="door"></span>Kanal</a>
       <a href="#/panduan" data-nav="panduan"><span data-ikon="book"></span>Panduan</a>
@@ -89,6 +89,8 @@
               <label class="sr" for="saring-waktu">Waktu diubah</label>
               <select id="saring-waktu">
                 <option value="">Kapan saja</option>
+                <option value="1">24 jam terakhir</option>
+                <option value="3">3 hari terakhir</option>
                 <option value="7">7 hari terakhir</option>
                 <option value="30">30 hari terakhir</option>
                 <option value="90">3 bulan terakhir</option>
@@ -135,6 +137,7 @@
     <div id="v-kategori-semua" class="tampilan" hidden></div>
     <div id="v-folder" class="tampilan" hidden></div>
     <div id="v-terbaru" class="tampilan" hidden></div>
+    <div id="v-surat" class="tampilan" hidden></div>
     <div id="v-kanal" class="tampilan" hidden></div>
     <div id="v-monev" class="tampilan" hidden></div>
     <div id="v-monev-tim" class="tampilan" hidden></div>
@@ -156,6 +159,7 @@
           <a href="#pd-folder">Menjelajah folder</a>
           <a href="#pd-kategori">Kategori tim</a>
           <a href="#pd-terbaru">Berkas terbaru</a>
+          <a href="#pd-surat">Surat tugas</a>
           <a href="#pd-kanal">Kanal BPS Kukar</a>
           <a href="#pd-monev">Monev mingguan tim</a>
           <a href="#pd-kelola">Untuk pengelola</a>
@@ -204,6 +208,27 @@
           <section id="pd-terbaru">
             <h2>Berkas terbaru</h2>
             <p>Menu <b>Terbaru</b> menampilkan berkas yang baru diubah atau baru ditambahkan, dikelompokkan per hari. Saring per rentang waktu, jenis, atau kategori.</p>
+          </section>
+          <section id="pd-surat">
+            <h2>Surat tugas</h2>
+            <p>Sejak 2026 surat tugas dan SPD tidak lagi dicetak Tata Usaha. Berkasnya diunggah ke folder bulanan, lalu dicetak sendiri oleh pegawai yang bersangkutan. Menu <b>Surat Tugas</b> adalah tempat tetapnya, jadi tidak perlu lagi menggulir grup WhatsApp mencari link.</p>
+            <h3>Untuk pegawai</h3>
+            <ul>
+              <li>Buka menu <b>Surat Tugas</b>. Kartu paling atas selalu bulan yang sedang berjalan — klik <b>Buka folder bulan ini</b>.</li>
+              <li>Cari berkas atas nama Anda, lalu cetak. Kalau belum ada, berarti TU belum mengunggahnya.</li>
+              <li>Bulan lain ada di daftar 2026 dan 2027 di bawahnya. Folder yang sempat dibagikan di grup WhatsApp tetap tersimpan di bagian <b>Arsip tautan lama</b>.</li>
+            </ul>
+            <h3>Untuk Tata Usaha</h3>
+            <ul>
+              <li>Unggah ke folder bulan yang sesuai. Tombol <b>Salin link untuk TU</b> menyalin alamat folder bulan berjalan, tinggal ditempel di grup kalau perlu.</li>
+              <li>Satu folder per bulan, bukan per minggu — supaya pegawai cukup mengingat satu tempat.</li>
+            </ul>
+            <h3>Untuk admin</h3>
+            <ul>
+              <li>Tombol <b>Siapkan folder 2026 &amp; 2027</b> membuat 24 folder bulanan sekaligus di Google Drive akun kantor, di dalam folder <b>Surat Tugas BPS Kukar</b>. Aman diklik berkali-kali: folder yang sudah ada tidak digandakan.</li>
+              <li>Ikon pensil di tiap bulan dipakai kalau ingin memakai folder yang sudah terlanjur dibuat sendiri — tempel saja link foldernya.</li>
+            </ul>
+            <p class="pd-tip">Siapa yang boleh membuka folder diatur di Google Drive, bukan dari PINTU. Setelah folder dibuat, buka folder <b>Surat Tugas BPS Kukar</b> di Drive dan atur berbagi sesuai kebijakan kantor — misalnya hanya pegawai tertentu, atau siapa saja yang memiliki link seperti praktik yang berjalan sekarang.</p>
           </section>
           <section id="pd-kanal">
             <h2>Kanal BPS Kukar</h2>
