@@ -1321,7 +1321,7 @@
       (idKini
         ? '<section class="st-kini"><div class="st-kini-teks"><span class="st-label">Bulan berjalan</span><h2>' + esc(d.bulan[blKini - 1]) + " " + esc(thKini) + "</h2>" +
           "<p>" + (dariGrup
-            ? "Tautan dari grup WhatsApp, dibagikan " + esc(stTanggal(gKini.tgl)) + ". Folder bulanan PINTU untuk bulan ini belum dibuat."
+            ? "Tautan dari grup WhatsApp, dibagikan " + esc(stTanggal(gKini.tgl)) + "." + (peranMin("pengelola") ? " Folder bulanan PINTU untuk bulan ini belum dibuat." : "")
             : jmlKini < 0 ? "Folder siap. Daftar isinya muncul di PINTU setelah pembaruan berikutnya." : jmlKini ? "<b>" + angka(jmlKini) + "</b> berkas di dalamnya." : "Belum ada berkas bulan ini.") + "</p></div>" +
           '<div class="st-kini-aksi"><a class="tombol" href="' + esc(stUrl(idKini)) + '" target="_blank" rel="noopener">' + ic("folder") + "Buka folder bulan ini</a>" +
           '<button class="tombol hantu" type="button" data-aksi="salin" data-url="' + esc(stUrl(idKini)) + '">' + ic("copy") + "Salin link untuk TU</button></div></section>"
