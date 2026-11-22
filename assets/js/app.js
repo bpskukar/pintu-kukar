@@ -1247,6 +1247,20 @@
      ================================================================= */
   var ST = { data: null, muat: false, galat: "" };
   function stUrl(id) { return "https://drive.google.com/drive/folders/" + id; }
+  function stIdDari(url) { var m = /\/folders\/([\w-]{15,})/.exec(String(url || "")); return m ? m[1] : ""; }
+  function stTanggal(tgl) { var t = String(tgl).split("-"); return (+t[2]) + " " + BULAN[+t[1] - 1]; }
+  function stGrup() {
+    var peta = {};
+    (window.PINTU_SURAT_LAMA || []).forEach(function (x) {
+      var kunci = String(x.tgl || "").slice(0, 7), id = stIdDari(x.url), a;
+      if (kunci.length !== 7 || !id) return;
+      a = peta[kunci];
+      if (!a) peta[kunci] = a = { id: id, tgl: x.tgl, ket: x.ket || "", jml: 0 };
+      else if (x.tgl > a.tgl) { a.id = id; a.tgl = x.tgl; a.ket = x.ket || ""; }
+      a.jml++;
+    });
+    return peta;
+  }
   function stMuat(lanjut) {
     if (ST.muat) return;
     ST.muat = true; ST.galat = "";
@@ -1263,9 +1277,16 @@
     if (!n) return -1;
     return mesin.isiFolder(n).length;
   }
-  function stKartuBulan(th, bl, id, kini) {
+  function stKartuBulan(th, bl, id, kini, g) {
     var nama = ST.data.bulan[bl - 1], kunci = th + "-" + ("0" + bl).slice(-2);
     var ini = kunci === kini, jml = id ? stJumlah(id) : -1;
+    if (!id && g) {
+      return '<div class="st-bulan grup' + (ini ? " kini" : "") + '">' +
+        '<a class="st-buka" href="' + esc(stUrl(g.id)) + '" target="_blank" rel="noopener" title="' + esc(g.ket) + '"><span class="st-nama">' + esc(nama) + ' <span class="pil">grup WA</span></span>' +
+        '<span class="st-ket">' + (g.jml > 1 ? g.jml + " tautan, terakhir " + esc(stTanggal(g.tgl)) : "dibagikan " + esc(stTanggal(g.tgl))) + "</span></a>" +
+        '<div class="st-aksi"><button class="ikon-kecil" type="button" data-aksi="salin" data-url="' + esc(stUrl(g.id)) + '" title="Salin link ' + esc(nama) + '" aria-label="Salin link ' + esc(nama) + '">' + ic("copy") + "</button>" +
+        (peranMin("pengelola") ? '<button class="ikon-kecil" type="button" data-aksi="st-atur" data-th="' + th + '" data-bl="' + bl + '" title="Ganti folder" aria-label="Ganti folder ' + esc(nama) + '">' + ic("pencil") + "</button>" : "") + "</div></div>";
+    }
     if (!id) {
       return '<div class="st-bulan kosong' + (ini ? " kini" : "") + '"><span class="st-nama">' + esc(nama) + "</span>" +
         '<span class="st-ket">belum ada folder</span>' +
@@ -1285,8 +1306,10 @@
       return;
     }
     var d = ST.data, kini = d.kini, thKini = kini.slice(0, 4), blKini = +kini.slice(5, 7);
-    var idKini = (d.tahun[thKini] || {})[String(blKini)] || "";
-    var jmlKini = idKini ? stJumlah(idKini) : -1;
+    var grup = stGrup(), gKini = grup[kini];
+    var idKini = (d.tahun[thKini] || {})[String(blKini)] || "", dariGrup = false;
+    if (!idKini && gKini) { idKini = gKini.id; dariGrup = true; }
+    var jmlKini = idKini && !dariGrup ? stJumlah(idKini) : -1;
     var lama = (window.PINTU_SURAT_LAMA || []).slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); });
     var belum = 0;
     d.daftarTahun.forEach(function (th) { for (var i = 1; i <= 12; i++) if (!((d.tahun[String(th)] || {})[String(i)])) belum++; });
@@ -1297,7 +1320,9 @@
       '<div class="bungkus isi-halaman">' +
       (idKini
         ? '<section class="st-kini"><div class="st-kini-teks"><span class="st-label">Bulan berjalan</span><h2>' + esc(d.bulan[blKini - 1]) + " " + esc(thKini) + "</h2>" +
-          "<p>" + (jmlKini < 0 ? "Folder siap. Daftar isinya muncul di PINTU setelah pembaruan berikutnya." : jmlKini ? "<b>" + angka(jmlKini) + "</b> berkas di dalamnya." : "Belum ada berkas bulan ini.") + "</p></div>" +
+          "<p>" + (dariGrup
+            ? "Tautan dari grup WhatsApp, dibagikan " + esc(stTanggal(gKini.tgl)) + ". Folder bulanan PINTU untuk bulan ini belum dibuat."
+            : jmlKini < 0 ? "Folder siap. Daftar isinya muncul di PINTU setelah pembaruan berikutnya." : jmlKini ? "<b>" + angka(jmlKini) + "</b> berkas di dalamnya." : "Belum ada berkas bulan ini.") + "</p></div>" +
           '<div class="st-kini-aksi"><a class="tombol" href="' + esc(stUrl(idKini)) + '" target="_blank" rel="noopener">' + ic("folder") + "Buka folder bulan ini</a>" +
           '<button class="tombol hantu" type="button" data-aksi="salin" data-url="' + esc(stUrl(idKini)) + '">' + ic("copy") + "Salin link untuk TU</button></div></section>"
         : '<section class="kosong"><p><b>Folder bulan ini belum ada.</b></p><p>' +
@@ -1309,11 +1334,11 @@
         : "") +
       d.daftarTahun.map(function (th) {
         var peta = d.tahun[String(th)] || {}, isi = "";
-        for (var i = 1; i <= 12; i++) isi += stKartuBulan(String(th), i, peta[String(i)] || "", kini);
+        for (var i = 1; i <= 12; i++) isi += stKartuBulan(String(th), i, peta[String(i)] || "", kini, grup[String(th) + "-" + ("0" + i).slice(-2)]);
         return '<section class="st-tahun"><h2>' + th + "</h2><div class=\"st-grid\">" + isi + "</div></section>";
       }).join("") +
       (lama.length
-        ? '<section class="st-arsip"><h2>Arsip tautan lama</h2><p class="st-arsip-ket">Folder yang pernah dibagikan di grup WhatsApp sepanjang 2026, sebelum folder bulanan ini dipakai.</p><ul class="st-arsip-daftar">' +
+        ? '<section class="st-arsip"><h2>Arsip tautan lama</h2><p class="st-arsip-ket">Semua folder yang pernah dibagikan di grup WhatsApp sepanjang 2026. Yang terakhir dipakai pada tiap bulan juga sudah dipasang di kartu bulan di atas, ditandai <b>grup WA</b>.</p><ul class="st-arsip-daftar">' +
           lama.map(function (x) {
             var t = x.tgl.split("-");
             return "<li><a href=\"" + esc(x.url) + '" target="_blank" rel="noopener">' + ic("folder") + "<span><b>" + esc(x.ket) + "</b><small>dibagikan " + (+t[2]) + " " + BULAN[+t[1] - 1] + " " + t[0] + "</small></span></a></li>";
