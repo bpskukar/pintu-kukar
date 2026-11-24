@@ -436,6 +436,9 @@ a.tombol-ikon { display: inline-grid; place-items: center; text-decoration: none
 }
 .isian textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
 .isian input:focus, .isian textarea:focus, .isian select:focus { outline: 0; border-color: var(--brand-2); box-shadow: 0 0 0 3px var(--brand-soft); }
+.isian .kotak-saring { margin-top: 6px; }
+.isian .kotak-saring input { border: 0; border-radius: 0; background: transparent; padding: 10px 0; min-height: 0; box-shadow: none; }
+.isian .kotak-saring input:focus { border: 0; box-shadow: none; }
 .isian .petunjuk { font-size: 12.5px; color: var(--muted); }
 .isian-sandi { position: relative; }
 .isian-sandi input { padding-right: 46px; }

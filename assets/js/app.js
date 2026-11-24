@@ -1510,9 +1510,21 @@
     var induk = e.mengikuti ? evCari(e.mengikuti) : null;
     return induk ? (induk.kelompok || []) : [];
   }
+  function evButirCari(evId, kode) {
+    var hasil = null;
+    evKelompok(evCari(evId)).forEach(function (k) {
+      k.butir.forEach(function (b) { if (b.kode === kode) hasil = b; });
+    });
+    return hasil;
+  }
+  /* Bukti bawaan: folder yang sudah tercatat di instrumen (LKE ZI, folder aspek PEKPPP, dst). */
   function lkeBukti(evId, kode) {
     var peta = (window.PINTU_BUKTI_LKE || {})[evId];
-    return (peta && peta[kode]) ? peta[kode] : null;
+    if (peta && peta[kode]) return peta[kode];
+    var e = evCari(evId);
+    if (!e || e.mengikuti) return null;   /* tahun yang meminjam instrumen tahun lain mulai dari kosong */
+    var b = evButirCari(evId, kode);
+    return (b && b.folder) ? { f: b.folder, n: 0 } : null;
   }
   function evSlot(b) {
     return (b.syarat && b.syarat.length)
@@ -1695,7 +1707,7 @@
               (lke.length ? ' <span class="pil bb-pil" title="' + esc(jb[0].nama) + '">juga dipakai di ' + esc(lke.join(", ")) + "</span>" : "") + "</span></p>" +
               (punya.length ? '<ul class="ev-daftar">' + punya.map(function (x) { return evBarisBukti(x, peta); }).join("") + "</ul>" : "") +
               (!punya.length && lkeButir ? '<ul class="ev-daftar"><li class="ev-bukti ev-lke"><a href="https://drive.google.com/drive/folders/' + esc(lkeButir.f) + '" target="_blank" rel="noopener">' + ic("folder") +
-                "<span><b>Folder bukti dukung LKE 2026</b><small>" + (lkeButir.n ? angka(lkeButir.n) + " berkas sudah diunggah · " : "") + 'tercatat di LKE, belum dipasang lewat PINTU</small></span></a><span class="pil bb-pil">dari LKE</span></li></ul>' : "") +
+                "<span><b>" + esc(e.tahun === 2026 && evAwalan(e.id) === "zi" ? "Folder bukti dukung LKE 2026" : "Folder bukti dukung " + e.nama + " " + e.tahun) + "</b><small>" + (lkeButir.n ? angka(lkeButir.n) + " berkas sudah diunggah · " : "") + 'tercatat di LKE, belum dipasang lewat PINTU</small></span></a><span class="pil bb-pil">dari LKE</span></li></ul>' : "") +
               '<button class="tombol hantu kecil" type="button" data-aksi="ev-pasang" data-ev="' + esc(e.id) + '" data-butir="' + esc(b.kode) + '" data-syarat="' + esc(sl.i) + '" data-nama="' + esc(sl.nama) + '">' +
               ic("plus") + (punya.length ? "Tambah berkas" : "Pasang berkas") + "</button></li>";
           }).join("") + "</ul>" +
