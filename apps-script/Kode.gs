@@ -1286,9 +1286,11 @@ function monevAngka_(v) {
 
 function monevSiapkanTab_(ss, t) {
   var nama = String(t.singkat || t.nama || t.id).slice(0, 90);
-  var sh = ss.getSheetByName(nama);
-  if (!sh) {
-    sh = ss.insertSheet(nama);
+  var sh = ss.getSheetByName(nama), baru = false, diisi = false;
+  if (!sh) { sh = ss.insertSheet(nama); baru = true; }
+  /* Tab yang masih kosong (baru dibuat atau pernah dibuat tapi belum diisi)
+     dipasangi judul kolom dan contoh kegiatan. Tab yang sudah berisi data tidak disentuh. */
+  if (sh.getLastRow() <= 1) {
     sh.getRange(1, 1, 1, MONEV_KOLOM.length).setValues([MONEV_KOLOM]);
     try { sh.setFrozenRows(1); } catch (e) { /* abaikan */ }
     var contoh = MONEV_CONTOH[t.id];
@@ -1296,11 +1298,12 @@ function monevSiapkanTab_(ss, t) {
       sh.getRange(2, 1, contoh.length, MONEV_KOLOM.length).setValues(contoh.map(function (r, i) {
         return [i + 1, r[0], r[1], r[2], r[3]];
       }));
+      diisi = true;
     }
   }
   var gid = '';
   try { gid = String(sh.getSheetId()); } catch (e) { gid = ''; }
-  return { nama: nama, gid: gid };
+  return { nama: nama, gid: gid, baru: baru, diisi: diisi };
 }
 
 function monevTimSiapkan_(u) {
@@ -1316,11 +1319,12 @@ function monevTimSiapkan_(u) {
     baru = true;
   }
   var tim = bacaTim_().filter(function (t) { return t.aktif; });
-  var tambah = 0;
+  var tambah = 0, diisi = 0;
   tim.forEach(function (t) {
-    var adaDulu = !!(cfg.tab[t.id] && ss.getSheetByName(cfg.tab[t.id].nama));
-    cfg.tab[t.id] = monevSiapkanTab_(ss, t);
-    if (!adaDulu) tambah++;
+    var hasil = monevSiapkanTab_(ss, t);
+    if (hasil.baru) tambah++;
+    if (hasil.diisi) diisi++;
+    cfg.tab[t.id] = { nama: hasil.nama, gid: hasil.gid };
   });
   if (baru) {
     var kosong = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
@@ -1328,8 +1332,8 @@ function monevTimSiapkan_(u) {
   }
   setPengaturan_('monevSheet', cfg);
   try { CacheService.getScriptCache().remove('monevTim'); } catch (e) { /* abaikan */ }
-  catat_(u.nama || u.id, 'Siapkan spreadsheet monev tim', (baru ? 'berkas baru, ' : '') + tambah + ' tab tim');
-  return { ok: true, baru: baru, tambah: tambah, data: monevTimData_(true) };
+  catat_(u.nama || u.id, 'Siapkan spreadsheet monev tim', (baru ? 'berkas baru, ' : '') + tambah + ' tab baru, ' + diisi + ' tab diisi contoh');
+  return { ok: true, baru: baru, tambah: tambah, diisi: diisi, data: monevTimData_(true) };
 }
 
 function monevTimData_(segar) {

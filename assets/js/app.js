@@ -1992,7 +1992,12 @@
       var d = res.data || res;
       M.data = d.data || d;
       renderRute();
-      toast(res.baru ? "Spreadsheet monev dibuat" : (res.tambah ? res.tambah + " tab tim disegarkan" : "Semua tab tim sudah ada"), "check");
+      var pesan = res.baru ? "Spreadsheet monev dibuat"
+        : res.tambah ? res.tambah + " tab tim baru dibuat"
+        : res.diisi ? res.diisi + " tab kosong diisi contoh kegiatan"
+        : "Semua tab tim sudah ada dan terisi";
+      if (!res.baru && res.tambah && res.diisi) pesan = res.tambah + " tab baru · " + res.diisi + " tab diisi contoh";
+      toast(pesan, "check");
     }, function (err) {
       tombol.disabled = false; tombol.textContent = label;
       toast((err && err.message) || "Gagal menyiapkan spreadsheet.", "alert");
