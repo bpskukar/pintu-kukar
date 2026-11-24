@@ -50,7 +50,8 @@ var KOLOM = {
   Sampah: ['sid', 'waktu', 'oleh', 'jenis', 'judul', 'isi'],
   Tim: ['id', 'nama', 'singkat', 'ketua', 'warna', 'urutan', 'aktif'],
   Rencana: ['id', 'tim', 'bulan', 'kegiatan', 'satuan', 'target', 'catatan', 'urutan', 'oleh', 'diubah'],
-  Monev: ['id', 'rencana', 'tim', 'bulan', 'minggu', 'realisasi', 'kendala', 'status', 'oleh', 'diubah']
+  Monev: ['id', 'rencana', 'tim', 'bulan', 'minggu', 'realisasi', 'kendala', 'status', 'oleh', 'diubah'],
+  Bukti: ['id', 'evaluasi', 'butir', 'syarat', 'berkas', 'jenis', 'judul', 'url', 'catatan', 'oleh', 'diubah']
 };
 var PERAN = { pengguna: 1, pengelola: 2, admin: 3 };
 var PENGATURAN_AWAL = {
@@ -171,6 +172,10 @@ function doPost(e) {
         return json_(denganKunci_(function () { return monevAtur_(u, b); }));
       /* Monev mingguan tim kerja (di berkas ini) */
       case 'monevTim': return json_(monevData_(u, b));
+      /* Bukti dukung evaluasi: ZI, PEKPPP, SAKIP, PPID */
+      case 'bukti': return json_(buktiData_());
+      case 'buktiSimpan': return json_(denganKunci_(function () { return buktiSimpan_(u, b); }));
+      case 'buktiHapus': return json_(denganKunci_(function () { return buktiHapus_(u, b); }));
       /* Surat tugas: folder bulanan tempat TU mengunggah */
       case 'suratTugas': return json_(suratTugasData_());
       case 'suratTugasSiapkan': return json_(denganKunci_(function () { return suratTugasSiapkan_(u, b); }));
@@ -1407,6 +1412,58 @@ function hapusTim_(u, b) {
    ===================================================================== */
 function props_() { return PropertiesService.getScriptProperties(); }
 function zona_() { return ZONA; }
+/* ===================== Bukti dukung evaluasi =====================
+   Satu berkas Drive bisa dipasang di banyak butir dan banyak evaluasi
+   (ZI, PEKPPP, SAKIP, PPID). Yang disimpan di sini hanya pemasangannya;
+   instrumen tiap evaluasi ada di assets/js/evaluasi.js di situs. */
+function buktiData_() {
+  return { ok: true, bukti: baca_('Bukti') };
+}
+
+function buktiSimpan_(u, b) {
+  var ev = String(b.evaluasi || '').trim().slice(0, 40);
+  var butir = String(b.butir || '').trim().slice(0, 40);
+  if (!ev || !butir) throw new Error('Evaluasi dan butir wajib diisi.');
+  var syarat = String(b.syarat == null ? '' : b.syarat).trim().slice(0, 6);
+  var url = String(b.url || '').trim();
+  var berkas = idDrive_(url);
+  if (!berkas) throw new Error('Tempel tautan Google Drive berkas atau foldernya (yang memuat /file/d/… atau /folders/…).');
+  var jenis = /\/folders\//.test(url) ? 'folder' : 'berkas';
+  var judul = String(b.judul || '').trim().slice(0, 200) || (jenis === 'folder' ? 'Folder bukti dukung' : 'Berkas bukti dukung');
+  var daftar = baca_('Bukti'), baris = null, bentrok = false;
+  daftar.forEach(function (x) {
+    if (b.id && x.id === String(b.id)) baris = x;
+    else if (x.evaluasi === ev && x.butir === butir && x.syarat === syarat && x.berkas === berkas) bentrok = true;
+  });
+  if (bentrok) throw new Error('Berkas itu sudah terpasang di butir ini.');
+  if (baris && baris.oleh && baris.oleh !== u.id) wajibPeran_(u, 'pengelola');
+  if (!baris) {
+    baris = { id: idBaru_(), evaluasi: ev, butir: butir, syarat: syarat, oleh: u.id };
+    daftar.push(baris);
+  }
+  baris.berkas = berkas;
+  baris.jenis = jenis;
+  baris.judul = judul;
+  baris.url = url.slice(0, 400);
+  baris.catatan = String(b.catatan || '').trim().slice(0, 300);
+  baris.diubah = sekarang_();
+  tulis_('Bukti', daftar);
+  catat_(u.nama || u.id, 'Pasang bukti dukung', ev + ' ' + butir + (syarat ? '.' + syarat : '') + ' · ' + judul);
+  return { ok: true, bukti: daftar };
+}
+
+function buktiHapus_(u, b) {
+  var daftar = baca_('Bukti'), sisa = [], target = null;
+  daftar.forEach(function (x) {
+    if (x.id === String(b.id || '')) target = x; else sisa.push(x);
+  });
+  if (!target) throw new Error('Bukti tidak ditemukan.');
+  if (target.oleh && target.oleh !== u.id) wajibPeran_(u, 'pengelola');
+  tulis_('Bukti', sisa);
+  catat_(u.nama || u.id, 'Lepas bukti dukung', target.evaluasi + ' ' + target.butir + ' · ' + target.judul);
+  return { ok: true, bukti: sisa };
+}
+
 function sekarang_() { return Utilities.formatDate(new Date(), zona_(), 'yyyy-MM-dd HH:mm'); }
 function parseWaktu_(s) {
   var m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);

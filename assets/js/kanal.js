@@ -113,13 +113,6 @@ window.PINTU_KANAL = [
    ===================================================================== */
 window.PINTU_MONEV_KEGIATAN = [
   {
-    nama: "Cleaning Data Anomali SE2026",
-    ket: "Progres tindak lanjut verifikasi per pegawai, langsung dari spreadsheet Kab/Kota.",
-    url: "monev/cleaning-se2026.html",
-    ikon: "clipboard",
-    status: "Berjalan"
-  },
-  {
     nama: "Semua monev kegiatan",
     ket: "Halaman Monev Kegiatan berisi seluruh kegiatan yang dipantau.",
     url: "monev/",

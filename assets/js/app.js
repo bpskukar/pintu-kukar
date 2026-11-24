@@ -505,12 +505,12 @@
   /* =================================================================
      RUTE
      ================================================================= */
-  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "surat", "kanal", "monev", "monev-tim", "panduan"];
+  var TAMPILAN = ["beranda", "kategori", "kategori-semua", "folder", "terbaru", "surat", "evaluasi", "kanal", "monev", "monev-tim", "panduan"];
   var rute = { nama: "beranda", arg: "" };
   function tampilkan(nama) {
-    var wadah = nama === "monev-dasbor" ? "monev" : nama;
+    var wadah = nama === "monev-dasbor" ? "monev" : nama === "evaluasi-isi" ? "evaluasi" : nama;
     TAMPILAN.forEach(function (t) { $("#v-" + t).hidden = t !== wadah; });
-    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : (nama === "monev-tim" || nama === "monev-dasbor") ? "monev" : nama === "folder" ? "" : nama;
+    var navNama = nama === "kategori-semua" || nama === "kategori" ? "kategori" : (nama === "monev-tim" || nama === "monev-dasbor") ? "monev" : nama === "evaluasi-isi" ? "evaluasi" : nama === "folder" ? "" : nama;
     $$("[data-nav]").forEach(function (a) { a.classList.toggle("aktif", a.getAttribute("data-nav") === navNama); });
   }
   function bacaRute() {
@@ -523,6 +523,8 @@
     if ((m = h.match(/^#\/monev\/tim\/([\w-]+)/))) return { nama: "monev-tim", arg: m[1] };
     if (/^#\/monev\/tim/.test(h)) return { nama: "monev-dasbor" };
     if (/^#\/monev/.test(h)) return { nama: "monev" };
+    if ((m = h.match(/^#\/evaluasi\/([\w-]+)/))) return { nama: "evaluasi-isi", arg: m[1] };
+    if (/^#\/evaluasi/.test(h)) return { nama: "evaluasi" };
     if (/^#\/kanal/.test(h)) return { nama: "kanal" };
     if (/^#\/surat/.test(h)) return { nama: "surat" };
     if (/^#\/panduan/.test(h)) return { nama: "panduan" };
@@ -545,6 +547,8 @@
     else if (rute.nama === "kategori-semua") renderSemuaKategori();
     else if (rute.nama === "folder") renderFolder(rute.arg);
     else if (rute.nama === "terbaru") renderTerbaru();
+    else if (rute.nama === "evaluasi") renderEvaluasiPilih();
+    else if (rute.nama === "evaluasi-isi") renderEvaluasi(rute.arg);
     else if (rute.nama === "kanal") renderKanal();
     else if (rute.nama === "surat") renderSuratTugas();
     else if (rute.nama === "monev") renderMonevPilih();
@@ -1488,6 +1492,232 @@
       (x.ket ? "<small>" + esc(x.ket) + "</small>" : "") + "</span>" +
       '<span class="pk-panah">' + ic("arrowR") + "</span></a>";
   }
+  /* =================================================================
+     BUKTI DUKUNG EVALUASI (ZI, PEKPPP, SAKIP, PPID)
+     Satu berkas Drive bisa dipasang di banyak butir dan banyak evaluasi.
+     ================================================================= */
+  var EV = { bukti: null, muat: false, galat: "", saring: "semua", q: "" };
+
+  function evSemua() { return window.PINTU_EVALUASI || []; }
+  function evCari(id) {
+    var hasil = null;
+    evSemua().forEach(function (e) { if (e.id === id) hasil = e; });
+    return hasil;
+  }
+  function evSlot(b) {
+    return (b.syarat && b.syarat.length)
+      ? b.syarat.map(function (t, i) { return { i: String(i), nama: t }; })
+      : [{ i: "", nama: "Berkas bukti dukung" }];
+  }
+  function evKunci(ev, butir, syarat) { return ev + "|" + butir + "|" + (syarat == null ? "" : syarat); }
+  function evMuat(lanjut) {
+    if (EV.muat) return;
+    EV.muat = true; EV.galat = "";
+    panggil("bukti", {}).then(function (res) { EV.muat = false; EV.bukti = res.bukti || []; lanjut(); },
+      function (err) {
+        EV.muat = false;
+        EV.galat = (err && err.message) || "Gagal memuat bukti dukung.";
+        if (/Aksi tidak dikenal/i.test(EV.galat)) EV.galat = "Apps Script masih versi lama. Admin perlu menempel Kode.gs terbaru lalu Terapkan → Kelola deployment → Versi baru.";
+        lanjut();
+      });
+  }
+  function evPeta() {
+    var slot = {}, berkas = {};
+    (EV.bukti || []).forEach(function (x) {
+      var k = evKunci(x.evaluasi, x.butir, x.syarat);
+      (slot[k] = slot[k] || []).push(x);
+      (berkas[x.berkas] = berkas[x.berkas] || []).push(x);
+    });
+    return { slot: slot, berkas: berkas };
+  }
+  function evHitung(e, peta) {
+    var total = 0, isi = 0, butirIsi = 0, butirTotal = 0;
+    e.kelompok.forEach(function (k) {
+      k.butir.forEach(function (b) {
+        butirTotal++;
+        var ada = 0;
+        evSlot(b).forEach(function (sl) {
+          total++;
+          if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length) { isi++; ada++; }
+        });
+        if (ada) butirIsi++;
+      });
+    });
+    return { total: total, isi: isi, butirIsi: butirIsi, butirTotal: butirTotal, persen: total ? Math.round(isi * 100 / total) : 0 };
+  }
+  function evUrl(x) { return x.url || (x.jenis === "folder" ? "https://drive.google.com/drive/folders/" + x.berkas : "https://drive.google.com/file/d/" + x.berkas + "/view"); }
+  function evGerbangMuat(v, lanjut) {
+    if (EV.galat) {
+      v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>' + esc(EV.galat) + '</p><p><button class="tombol" type="button" data-aksi="ev-ulang">Coba lagi</button></p></div></div>';
+      return true;
+    }
+    v.innerHTML = '<div class="bungkus isi-halaman"><p class="gerbang-muat"><span class="putar" aria-hidden="true"></span>Memuat bukti dukung…</p></div>';
+    evMuat(lanjut);
+    return true;
+  }
+
+  function renderEvaluasiPilih() {
+    var v = $("#v-evaluasi");
+    if (!EV.bukti) { evGerbangMuat(v, renderEvaluasiPilih); return; }
+    var peta = evPeta(), dipakaiUlang = 0;
+    Object.keys(peta.berkas).forEach(function (b) { if (peta.berkas[b].length > 1) dipakaiUlang++; });
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Bukti Dukung</p>' +
+      '<h1>Bukti Dukung Evaluasi</h1><p class="kepala-sub">Satu berkas cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, maupun PPID.</p></div></section>' +
+      '<div class="bungkus isi-halaman">' +
+      (dipakaiUlang ? '<p class="st-catatan">' + ic("copy") + "<span><b>" + angka(dipakaiUlang) + "</b> berkas sudah dipakai di lebih dari satu butir — itu yang dulu dikerjakan dua kali.</span></p>" : "") +
+      '<div class="pilih-grid">' + evSemua().map(function (e) {
+        var h = evHitung(e, peta);
+        return '<a class="pilih-kartu" href="#/evaluasi/' + esc(e.id) + '">' +
+          '<span class="pk-ikon" style="background:var(--brand-soft);color:var(--brand-2)">' + ic("clipboard") + "</span>" +
+          '<span class="pk-teks"><span class="pk-judul"><b>' + esc(e.nama) + "</b><span class=\"pil\">" + e.tahun + "</span></span>" +
+          "<small>" + angka(h.isi) + " dari " + angka(h.total) + " berkas yang diminta sudah terpasang · " + angka(h.butirTotal) + " butir</small>" +
+          '<span class="ev-bar"><span style="width:' + h.persen + '%"></span></span></span>' +
+          '<span class="pk-panah">' + ic("arrowR") + "</span></a>";
+      }).join("") + "</div>" +
+      '<p class="st-catatan">Berkasnya tetap tinggal di Google Drive akun kantor. PINTU hanya mencatat berkas mana dipakai untuk butir apa, jadi tidak ada salinan ganda.</p></div>';
+  }
+
+  function evBarisBukti(x, peta) {
+    var lain = (peta.berkas[x.berkas] || []).length - 1;
+    return '<li class="ev-bukti"><a href="' + esc(evUrl(x)) + '" target="_blank" rel="noopener">' + ic(x.jenis === "folder" ? "folder" : "file") +
+      "<span><b>" + esc(x.judul) + "</b>" + (x.catatan ? "<small>" + esc(x.catatan) + "</small>" : "") +
+      (lain > 0 ? '<small class="ev-pakai">' + ic("copy") + "Dipakai juga di " + lain + " butir lain</small>" : "") + "</span></a>" +
+      '<span class="st-aksi"><button class="ikon-kecil" type="button" data-aksi="ev-ubah" data-id="' + esc(x.id) + '" title="Ubah keterangan" aria-label="Ubah keterangan">' + ic("pencil") + "</button>" +
+      '<button class="ikon-kecil" type="button" data-aksi="ev-lepas" data-id="' + esc(x.id) + '" title="Lepas berkas" aria-label="Lepas berkas">' + ic("trash") + "</button></span></li>";
+  }
+
+  function renderEvaluasi(id) {
+    var v = $("#v-evaluasi"), e = evCari(id);
+    if (!e) { v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>Evaluasi tidak dikenal.</p><p><a class="tombol" href="#/evaluasi">Kembali</a></p></div></div>'; return; }
+    if (!EV.bukti) { evGerbangMuat(v, function () { renderEvaluasi(id); }); return; }
+    var peta = evPeta(), h = evHitung(e, peta), q = (EV.q || "").toLowerCase();
+    var isi = e.kelompok.map(function (k) {
+      var baris = k.butir.map(function (b) {
+        var slot = evSlot(b), terisi = 0;
+        slot.forEach(function (sl) { if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length) terisi++; });
+        var cari = (b.kode + " " + b.judul + " " + (b.indikator || "") + " " + slot.map(function (x) { return x.nama; }).join(" ")).toLowerCase();
+        return '<article class="ev-butir' + (terisi >= slot.length ? " lengkap" : terisi ? " sebagian" : "") + '" data-terisi="' + terisi + '" data-slot="' + slot.length + '" data-cari="' + esc(cari) + '">' +
+          '<div class="ev-kepala"><span class="ev-kode">' + esc(b.kode) + "</span><div><p class=\"ev-judul\">" + esc(b.judul) + "</p>" +
+          (b.indikator ? '<p class="ev-induk">' + esc(b.indikator) + (b.pilihan ? " · jawaban " + esc(b.pilihan) : "") + "</p>" : "") + "</div>" +
+          '<span class="pil' + (terisi >= slot.length ? " baik" : "") + '">' + terisi + "/" + slot.length + "</span></div>" +
+          '<ul class="ev-slot">' + slot.map(function (sl) {
+            var punya = peta.slot[evKunci(e.id, b.kode, sl.i)] || [];
+            return '<li class="' + (punya.length ? "ev-ada" : "ev-belum") + '"><p class="ev-syarat">' + (punya.length ? ic("check") : ic("alert")) + "<span>" + esc(sl.nama) + "</span></p>" +
+              (punya.length ? '<ul class="ev-daftar">' + punya.map(function (x) { return evBarisBukti(x, peta); }).join("") + "</ul>" : "") +
+              '<button class="tombol hantu kecil" type="button" data-aksi="ev-pasang" data-ev="' + esc(e.id) + '" data-butir="' + esc(b.kode) + '" data-syarat="' + esc(sl.i) + '" data-nama="' + esc(sl.nama) + '">' +
+              ic("plus") + (punya.length ? "Tambah berkas" : "Pasang berkas") + "</button></li>";
+          }).join("") + "</ul>" +
+          (b.folder ? '<p class="ev-folder"><a href="https://drive.google.com/drive/folders/' + esc(b.folder) + '" target="_blank" rel="noopener">' + ic("folder") + "Folder bukti dukung butir ini di Drive</a></p>" : "") +
+          "</article>";
+      }).join("");
+      return baris ? '<section class="ev-kelompok"><h2>' + esc(k.nama) + "</h2>" + baris + "</section>" : "";
+    }).join("");
+    void q;
+
+    v.innerHTML =
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span><a href="#/evaluasi">Bukti Dukung</a><span aria-hidden="true">/</span>' + esc(e.nama) + "</p>" +
+      "<h1>" + esc(e.nama) + " " + e.tahun + "</h1>" + (e.ket ? '<p class="kepala-sub">' + esc(e.ket) + "</p>" : "") +
+      (e.sumber && e.sumber.url ? '<p class="kepala-sub"><a href="' + esc(e.sumber.url) + '" target="_blank" rel="noopener">' + ic("link") + esc(e.sumber.nama) + "</a></p>" : "") + "</div></section>" +
+      '<div class="bungkus isi-halaman">' +
+      '<section class="st-kini"><div class="st-kini-teks"><span class="st-label">Kelengkapan</span><h2>' + angka(h.isi) + " dari " + angka(h.total) + "</h2>" +
+      "<p>berkas yang diminta sudah terpasang · " + angka(h.butirIsi) + " dari " + angka(h.butirTotal) + " butir sudah ada buktinya.</p>" +
+      '<span class="ev-bar besar"><span style="width:' + h.persen + '%"></span></span></div></section>' +
+      '<div class="ev-alat"><div class="ev-saring" role="group" aria-label="Saring butir">' +
+      ["semua", "belum", "sudah"].map(function (x) {
+        return '<button class="tombol hantu kecil" type="button" data-aksi="ev-saring" data-nilai="' + x + '" aria-pressed="' + (EV.saring === x ? "true" : "false") + '">' +
+          (x === "semua" ? "Semua butir" : x === "belum" ? "Belum lengkap" : "Sudah ada bukti") + "</button>";
+      }).join("") + "</div>" +
+      '<div class="kotak-saring ev-cari">' + ic("search") + '<input id="ev-q" type="search" placeholder="Cari butir atau nama dokumen" value="' + esc(EV.q) + '" aria-label="Cari butir"></div></div>' +
+      (isi || '<div class="kosong"><p>Belum ada butir pada evaluasi ini.</p></div>') +
+      '<div class="kosong ev-kosong" hidden><p>Tidak ada butir yang cocok dengan saringan ini.</p></div>' +
+      '<p class="st-catatan">Berkas diunggah ke Google Drive akun kantor dulu, lalu tautannya dipasang di sini. Pengaturan siapa yang boleh membuka tetap diatur di Drive.</p></div>';
+
+    saringEvaluasi();
+  }
+
+  function saringEvaluasi() {
+    var q = (EV.q || "").trim().toLowerCase(), tampak = 0;
+    $$("#v-evaluasi .ev-butir").forEach(function (el) {
+      var terisi = +el.getAttribute("data-terisi"), slot = +el.getAttribute("data-slot");
+      var ok = EV.saring === "belum" ? terisi < slot : EV.saring === "sudah" ? terisi > 0 : true;
+      if (ok && q) ok = (el.getAttribute("data-cari") || "").indexOf(q) > -1;
+      el.hidden = !ok;
+      if (ok) tampak++;
+    });
+    $$("#v-evaluasi .ev-kelompok").forEach(function (sec) {
+      sec.hidden = !$$(".ev-butir:not([hidden])", sec).length;
+    });
+    var kosong = $("#v-evaluasi .ev-kosong");
+    if (kosong) kosong.hidden = tampak > 0;
+    $$("#v-evaluasi [data-aksi=\"ev-saring\"]").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-nilai") === EV.saring ? "true" : "false");
+    });
+  }
+
+  function evLepas(tombol) {
+    var id = tombol.getAttribute("data-id");
+    if (!id) return;
+    if (tombol.getAttribute("data-yakin") !== "1") {
+      tombol.setAttribute("data-yakin", "1");
+      tombol.classList.add("yakin");
+      tombol.title = "Klik sekali lagi untuk melepas";
+      setTimeout(function () { tombol.removeAttribute("data-yakin"); tombol.classList.remove("yakin"); tombol.title = "Lepas berkas"; }, 4000);
+      toast("Klik sekali lagi untuk melepas berkas ini", "alert");
+      return;
+    }
+    tombol.disabled = true;
+    panggil("buktiHapus", { id: id }).then(function (res) {
+      EV.bukti = res.data ? res.data.bukti : res.bukti;
+      renderRute();
+      toast("Berkas dilepas dari butir ini", "check");
+    }, function (err) {
+      tombol.disabled = false;
+      toast((err && err.message) || "Gagal melepas berkas.", "alert");
+    });
+  }
+
+  function dialogBukti(opsi) {
+    var e = evCari(opsi.ev), lama = null;
+    (EV.bukti || []).forEach(function (x) { if (opsi.id && x.id === opsi.id) lama = x; });
+    if (lama) { opsi.butir = lama.butir; opsi.syarat = lama.syarat; }
+    var daftarBerkas = [], lihat = {};
+    (EV.bukti || []).forEach(function (x) {
+      if (lihat[x.berkas]) return;
+      lihat[x.berkas] = true;
+      daftarBerkas.push(x);
+    });
+    var judulButir = "";
+    if (e) e.kelompok.forEach(function (k) { k.butir.forEach(function (b) { if (b.kode === opsi.butir) judulButir = b.kode + " · " + b.judul; }); });
+    bukaDialog('<form id="f-ev" novalidate>' + kepalaDlg(lama ? "Ubah bukti dukung" : "Pasang bukti dukung", judulButir) +
+      '<div class="dlg-isi"><p class="galat" hidden></p>' +
+      (opsi.nama ? '<p class="dlg-ket">Yang diminta: <b>' + esc(opsi.nama) + "</b></p>" : "") +
+      (!lama && daftarBerkas.length ? '<div class="isian"><label for="ev-pakai">Pakai berkas yang sudah ada</label><select id="ev-pakai" class="pilih"><option value="">— berkas baru —</option>' +
+        daftarBerkas.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.judul) + "</option>"; }).join("") + "</select>" +
+        '<small class="isian-ket">Berkas yang sudah dipakai di evaluasi lain tinggal dipilih, tidak perlu diunggah ulang.</small></div>' : "") +
+      '<div class="isian"><label for="ev-url">Link Google Drive</label><input id="ev-url" type="url" value="' + esc(lama ? evUrl(lama) : "") + '" placeholder="https://drive.google.com/file/d/…" required></div>' +
+      '<div class="isian"><label for="ev-judul">Nama berkas</label><input id="ev-judul" type="text" maxlength="200" value="' + esc(lama ? lama.judul : "") + '" placeholder="Misal: SK Tim Kerja ZI 2026"></div>' +
+      '<div class="isian"><label for="ev-catatan">Catatan (opsional)</label><input id="ev-catatan" type="text" maxlength="300" value="' + esc(lama ? lama.catatan : "") + '" placeholder="Misal: berlaku sampai Desember 2026"></div>' +
+      "</div>" + kakiDlg("", "Simpan") + "</form>", false);
+    var form = $("#f-ev"), pakai = $("#ev-pakai");
+    if (pakai) {
+      pakai.addEventListener("change", function () {
+        var pilih = null;
+        daftarBerkas.forEach(function (x) { if (x.id === pakai.value) pilih = x; });
+        if (pilih) { $("#ev-url").value = evUrl(pilih); $("#ev-judul").value = pilih.judul; }
+      });
+    }
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      prosesForm(form, function () {
+        return panggil("buktiSimpan", {
+          id: lama ? lama.id : "", evaluasi: opsi.ev, butir: opsi.butir, syarat: opsi.syarat,
+          url: $("#ev-url").value, judul: $("#ev-judul").value, catatan: $("#ev-catatan").value
+        }).then(function (res) { EV.bukti = res.data ? res.data.bukti : res.bukti; renderRute(); });
+      }, lama ? "Bukti dukung diperbarui" : "Bukti dukung terpasang");
+    });
+  }
+
   function renderMonevPilih() {
     var v = $("#v-monev");
     var daftar = [{
@@ -1847,6 +2077,11 @@
           case "keluar": keluar(); return;
           case "baru-lagi": baruState.tampil += 150; renderTerbaru(); return;
           case "terbaru-kat": baruState.kat = t.getAttribute("data-id"); location.hash = "#/terbaru"; return;
+          case "ev-pasang": dialogBukti({ ev: t.getAttribute("data-ev"), butir: t.getAttribute("data-butir"), syarat: t.getAttribute("data-syarat"), nama: t.getAttribute("data-nama") }); return;
+          case "ev-ubah": dialogBukti({ id: t.getAttribute("data-id"), ev: (function () { var x = null; (EV.bukti || []).forEach(function (y) { if (y.id === t.getAttribute("data-id")) x = y; }); return x ? x.evaluasi : ""; })() }); return;
+          case "ev-lepas": evLepas(t); return;
+          case "ev-saring": EV.saring = t.getAttribute("data-nilai") || "semua"; saringEvaluasi(); return;
+          case "ev-ulang": EV.galat = ""; EV.bukti = null; renderRute(); return;
           case "st-siapkan": stSiapkan(t); return;
           case "st-atur": dialogSuratBulan(t.getAttribute("data-th"), +t.getAttribute("data-bl")); return;
           case "st-ulang": ST.galat = ""; ST.data = null; renderRute(); return;
@@ -1870,7 +2105,10 @@
       else if ((b = e.target.closest("[data-bgrup]"))) { baruState.grup = b.getAttribute("data-bgrup"); baruState.tampil = 100; renderTerbaru(); }
       else if ((b = e.target.closest("[data-furut]"))) { folderState.urut = b.getAttribute("data-furut"); renderFolder(folderState.n); }
     });
-    document.addEventListener("input", function (e) { if (e.target.id === "kanal-q") { kanalQ = e.target.value; saringKanal(); } });
+    document.addEventListener("input", function (e) {
+      if (e.target.id === "kanal-q") { kanalQ = e.target.value; saringKanal(); }
+      else if (e.target.id === "ev-q") { EV.q = e.target.value; saringEvaluasi(); }
+    });
     document.addEventListener("change", function (e) { if (e.target.id === "baru-kat") { baruState.kat = e.target.value; baruState.tampil = 100; renderTerbaru(); } });
     window.addEventListener("hashchange", keRute);
     keRute();
