@@ -1510,6 +1510,10 @@
     var induk = e.mengikuti ? evCari(e.mengikuti) : null;
     return induk ? (induk.kelompok || []) : [];
   }
+  function lkeBukti(evId, kode) {
+    var peta = (window.PINTU_BUKTI_LKE || {})[evId];
+    return (peta && peta[kode]) ? peta[kode] : null;
+  }
   function evSlot(b) {
     return (b.syarat && b.syarat.length)
       ? b.syarat.map(function (t, i) { return { i: String(i), nama: t }; })
@@ -1541,10 +1545,10 @@
     evKelompok(e).forEach(function (k) {
       k.butir.forEach(function (b) {
         butirTotal++;
-        var ada = 0;
+        var ada = 0, lke = lkeBukti(e.id, b.kode);
         evSlot(b).forEach(function (sl) {
           total++;
-          if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length) { isi++; ada++; }
+          if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length || lke) { isi++; ada++; }
         });
         if (ada) butirIsi++;
       });
@@ -1560,6 +1564,68 @@
     v.innerHTML = '<div class="bungkus isi-halaman"><p class="gerbang-muat"><span class="putar" aria-hidden="true"></span>Memuat bukti dukung…</p></div>';
     evMuat(lanjut);
     return true;
+  }
+
+  /* ---- bukti yang dipakai berulang di beberapa LKE ---- */
+  var BB_LABEL = { zi: "ZI", pekppp: "PEKPPP", ppid: "PPID", sakip: "SAKIP" };
+  function bbSemua() { return window.PINTU_BUKTI_BERSAMA || []; }
+  function evAwalan(id) { return String(id || "").replace(/\d{4}$/, ""); }
+  function bbPeta() {
+    if (bbPeta._simpan) return bbPeta._simpan;
+    var peta = {};
+    bbSemua().forEach(function (j) {
+      j.tujuan.forEach(function (t) {
+        var k = t.ev + "|" + t.butir + "|" + (t.syarat || "");
+        (peta[k] = peta[k] || []).push(j);
+      });
+    });
+    bbPeta._simpan = peta;
+    return peta;
+  }
+  function bbUntukSlot(evId, butir, syarat) {
+    return bbPeta()[evAwalan(evId) + "|" + butir + "|" + (syarat == null ? "" : syarat)] || [];
+  }
+  function bbLkeLain(j, evId) {
+    var pre = evAwalan(evId), nama = [];
+    j.tujuan.forEach(function (t) {
+      if (t.ev === pre) return;
+      if (nama.indexOf(BB_LABEL[t.ev] || t.ev) < 0) nama.push(BB_LABEL[t.ev] || t.ev);
+    });
+    return nama;
+  }
+  function bbHitungLke(j) {
+    var n = {};
+    j.tujuan.forEach(function (t) { n[t.ev] = (n[t.ev] || 0) + 1; });
+    return n;
+  }
+  function bbTujuanTahun(j, tahun) {
+    return j.tujuan.map(function (t) {
+      return { evaluasi: t.ev + tahun, butir: t.butir, syarat: t.syarat || "" };
+    }).filter(function (t) { return !!evCari(t.evaluasi); });
+  }
+  function bbTerisi(j, tahun, peta) {
+    var isi = 0, tuj = bbTujuanTahun(j, tahun);
+    tuj.forEach(function (t) { if ((peta.slot[evKunci(t.evaluasi, t.butir, t.syarat)] || []).length || lkeBukti(t.evaluasi, t.butir)) isi++; });
+    return { isi: isi, total: tuj.length };
+  }
+  function bbBlokHtml(tahun, peta) {
+    if (!bbSemua().length) return "";
+    return '<section class="bb-blok"><div class="bb-kepala"><h2>' + ic("copy") + "Bukti yang dipakai berulang</h2>" +
+      '<label class="bb-tahun">Untuk tahun <select id="bb-tahun" class="pilih">' +
+      evTahun().map(function (th) { return '<option value="' + th + '"' + (th === tahun ? " selected" : "") + ">" + th + "</option>"; }).join("") +
+      "</select></label></div>" +
+      '<p class="bb-ket">Dokumen di bawah ini diminta oleh lebih dari satu LKE. Unggah sekali ke Drive kantor, klik <b>Pasang</b>, lalu PINTU mencentangkan semua butir yang membutuhkannya — tinggal dicek dan disimpan.</p>' +
+      '<ul class="bb-daftar">' + bbSemua().map(function (j) {
+        var h = bbTerisi(j, tahun, peta), per = bbHitungLke(j);
+        var chip = Object.keys(per).map(function (ev) {
+          return '<span class="pil bb-lke">' + esc(BB_LABEL[ev] || ev) + " " + per[ev] + "</span>";
+        }).join("");
+        return '<li class="bb-baris' + (h.total && h.isi >= h.total ? " lengkap" : "") + '"><div class="bb-teks"><p class="bb-nama">' + esc(j.nama) +
+          (h.total && h.isi >= h.total ? ' <span class="pil baik">lengkap</span>' : "") + "</p>" +
+          "<p class=\"bb-sub\">" + esc(j.ket) + "</p><p class=\"bb-chip\">" + chip +
+          '<span class="bb-progres">' + h.isi + " dari " + h.total + " butir sudah ada buktinya</span></p></div>" +
+          '<button class="tombol hantu kecil" type="button" data-aksi="bb-pasang" data-id="' + esc(j.id) + '" data-tahun="' + tahun + '">' + ic("plus") + "Pasang</button></li>";
+      }).join("") + "</ul></section>";
   }
 
   function evTahunKini() { return new Date().getFullYear(); }
@@ -1578,6 +1644,7 @@
       '<h1>Satu Bukti</h1><p class="kepala-sub">Bukti dukung untuk semua evaluasi dalam satu tempat. Satu berkas cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, maupun PPID.</p></div></section>' +
       '<div class="bungkus isi-halaman">' +
       (dipakaiUlang ? '<p class="st-catatan">' + ic("copy") + "<span><b>" + angka(dipakaiUlang) + "</b> berkas sudah dipakai di lebih dari satu butir — itu yang dulu dikerjakan dua kali.</span></p>" : "") +
+      bbBlokHtml(EV.bbTahun || evTahunKini(), peta) +
       evTahun().map(function (th) {
         var daftar = evSemua().filter(function (e) { return e.tahun === th; });
         var isi = daftar.map(function (e) {
@@ -1609,11 +1676,12 @@
     var v = $("#v-evaluasi"), e = evCari(id);
     if (!e) { v.innerHTML = '<div class="bungkus isi-halaman"><div class="kosong"><p>Evaluasi tidak dikenal.</p><p><a class="tombol" href="#/evaluasi">Kembali</a></p></div></div>'; return; }
     if (!EV.bukti) { evGerbangMuat(v, function () { renderEvaluasi(id); }); return; }
+    if (EV.terakhir !== id) { EV.terakhir = id; EV.q = ""; EV.saring = "semua"; }   /* saringan tidak terbawa antar evaluasi */
     var peta = evPeta(), h = evHitung(e, peta), q = (EV.q || "").toLowerCase();
     var isi = evKelompok(e).map(function (k) {
       var baris = k.butir.map(function (b) {
-        var slot = evSlot(b), terisi = 0;
-        slot.forEach(function (sl) { if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length) terisi++; });
+        var slot = evSlot(b), terisi = 0, lkeButir = lkeBukti(e.id, b.kode);
+        slot.forEach(function (sl) { if ((peta.slot[evKunci(e.id, b.kode, sl.i)] || []).length || lkeButir) terisi++; });
         var cari = (b.kode + " " + b.judul + " " + (b.indikator || "") + " " + slot.map(function (x) { return x.nama; }).join(" ")).toLowerCase();
         return '<article class="ev-butir' + (terisi >= slot.length ? " lengkap" : terisi ? " sebagian" : "") + '" data-terisi="' + terisi + '" data-slot="' + slot.length + '" data-cari="' + esc(cari) + '">' +
           '<div class="ev-kepala"><span class="ev-kode">' + esc(b.kode) + "</span><div><p class=\"ev-judul\">" + esc(b.judul) + "</p>" +
@@ -1621,8 +1689,13 @@
           '<span class="pil' + (terisi >= slot.length ? " baik" : "") + '">' + terisi + "/" + slot.length + "</span></div>" +
           '<ul class="ev-slot">' + slot.map(function (sl) {
             var punya = peta.slot[evKunci(e.id, b.kode, sl.i)] || [];
-            return '<li class="' + (punya.length ? "ev-ada" : "ev-belum") + '"><p class="ev-syarat">' + (punya.length ? ic("check") : ic("alert")) + "<span>" + esc(sl.nama) + "</span></p>" +
+            var jb = bbUntukSlot(e.id, b.kode, sl.i), lke = jb.length ? bbLkeLain(jb[0], e.id) : [];
+            return '<li class="' + (punya.length || lkeButir ? "ev-ada" : "ev-belum") + '"><p class="ev-syarat">' + (punya.length || lkeButir ? ic("check") : ic("alert")) +
+              "<span>" + esc(sl.nama) +
+              (lke.length ? ' <span class="pil bb-pil" title="' + esc(jb[0].nama) + '">juga dipakai di ' + esc(lke.join(", ")) + "</span>" : "") + "</span></p>" +
               (punya.length ? '<ul class="ev-daftar">' + punya.map(function (x) { return evBarisBukti(x, peta); }).join("") + "</ul>" : "") +
+              (!punya.length && lkeButir ? '<ul class="ev-daftar"><li class="ev-bukti ev-lke"><a href="https://drive.google.com/drive/folders/' + esc(lkeButir.f) + '" target="_blank" rel="noopener">' + ic("folder") +
+                "<span><b>Folder bukti dukung LKE 2026</b><small>" + (lkeButir.n ? angka(lkeButir.n) + " berkas sudah diunggah · " : "") + 'tercatat di LKE, belum dipasang lewat PINTU</small></span></a><span class="pil bb-pil">dari LKE</span></li></ul>' : "") +
               '<button class="tombol hantu kecil" type="button" data-aksi="ev-pasang" data-ev="' + esc(e.id) + '" data-butir="' + esc(b.kode) + '" data-syarat="' + esc(sl.i) + '" data-nama="' + esc(sl.nama) + '">' +
               ic("plus") + (punya.length ? "Tambah berkas" : "Pasang berkas") + "</button></li>";
           }).join("") + "</ul>" +
@@ -1719,11 +1792,12 @@
     });
     return kata.slice(0, 3).join(" ");
   }
-  function evUsulHtml(q, lewati, berkas, peta, evSekarang) {
+  function evUsulHtml(q, lewati, berkas, peta, evSekarang, kunciPreset) {
     var kata = String(q || "").toLowerCase().split(/\s+/).filter(Boolean);
     if (!kata.length) return '<p class="ev-usul-kosong">Ketik kata kunci dokumennya, misalnya “SK Tim” atau “maklumat”, untuk mencari butir lain yang memakai berkas yang sama.</p>';
     var hasil = evSemuaSlot().filter(function (x) {
       if (x.ev + "|" + x.kode + "|" + x.syarat === lewati) return false;
+      if (kunciPreset && kunciPreset[x.ev + "|" + x.kode + "|" + x.syarat]) return false;
       if (berkas && (peta.slot[evKunci(x.ev, x.kode, x.syarat)] || []).some(function (y) { return y.berkas === berkas; })) return false;
       return kata.every(function (w) { return x.cari.indexOf(w) > -1; });
     });
@@ -1750,11 +1824,42 @@
     }).join("") + (hasil.length > potong.length ? '<p class="ev-usul-kosong">+' + (hasil.length - potong.length) + " butir lain cocok. Persempit kata kuncinya kalau yang dicari belum tampak.</p>" : "");
   }
 
+  function bbPresetHtml(preset) {
+    if (!preset || !preset.length) return "";
+    var grup = {}, urut = [];
+    preset.forEach(function (t) {
+      var e = evCari(t.evaluasi), nama = e ? e.nama + " " + e.tahun : t.evaluasi;
+      if (!grup[nama]) { grup[nama] = []; urut.push(nama); }
+      var judul = "", syaratNama = "";
+      if (e) evKelompok(e).forEach(function (k) {
+        k.butir.forEach(function (b) {
+          if (b.kode !== t.butir) return;
+          judul = b.judul;
+          var sl = evSlot(b).filter(function (x) { return x.i === t.syarat; })[0];
+          syaratNama = sl ? sl.nama : "";
+        });
+      });
+      grup[nama].push({ kunci: t.evaluasi + "|" + t.butir + "|" + t.syarat, kode: t.butir, nama: syaratNama || judul, judul: judul });
+    });
+    return '<div class="ev-usul ev-preset">' + urut.map(function (nama) {
+      return '<div class="ev-usul-grup"><p class="ev-usul-judul">' + esc(nama) + "</p>" +
+        grup[nama].map(function (x) {
+          return '<label class="ev-usul-baris"><input type="checkbox" class="ev-centang" value="' + esc(x.kunci) + '" checked>' +
+            "<span><b>" + esc(x.kode) + "</b> " + esc(x.nama) + "<small>" + esc(x.judul) + "</small></span></label>";
+        }).join("") + "</div>";
+    }).join("") + "</div>";
+  }
+
   function dialogBukti(opsi) {
     var peta = evPeta();
     var lama = null;
     (EV.bukti || []).forEach(function (x) { if (opsi.id && x.id === opsi.id) lama = x; });
     var sebar = opsi.sebar || null;                      /* berkas yang sudah ada, mau dipasang ke butir lain */
+    var jenis = null;                                    /* jenis bukti bersama: semua butirnya dicentang sekaligus */
+    if (opsi.bersama) bbSemua().forEach(function (x) { if (x.id === opsi.bersama) jenis = x; });
+    var preset = jenis ? bbTujuanTahun(jenis, opsi.tahun || evTahunKini()) : [];
+    var kunciPreset = {};
+    preset.forEach(function (t) { kunciPreset[t.evaluasi + "|" + t.butir + "|" + t.syarat] = true; });
     var utama = (!lama && !sebar && opsi.ev && opsi.butir) ? { ev: opsi.ev, butir: opsi.butir, syarat: opsi.syarat || "", nama: opsi.nama || "" } : null;
     var e = evCari(utama ? utama.ev : (lama ? lama.evaluasi : (sebar ? sebar.evaluasi : "")));
     var judulButir = "";
@@ -1764,23 +1869,27 @@
     }
     var daftarBerkas = [], lihat = {};
     (EV.bukti || []).forEach(function (x) { if (!lihat[x.berkas]) { lihat[x.berkas] = true; daftarBerkas.push(x); } });
-    var qAwal = sebar ? evKataKunci(sebar.judul) : (utama ? evKataKunci(utama.nama) : "");
+    var qAwal = jenis ? "" : sebar ? evKataKunci(sebar.judul) : (utama ? evKataKunci(utama.nama) : "");
     var lewati = utama ? utama.ev + "|" + utama.butir + "|" + utama.syarat : "";
     var berkasAwal = sebar ? sebar.berkas : "";
 
     bukaDialog('<form id="f-ev" novalidate>' +
-      kepalaDlg(lama ? "Ubah bukti dukung" : sebar ? "Pasang berkas ini di butir lain" : "Pasang bukti dukung", judulButir) +
+      kepalaDlg(lama ? "Ubah bukti dukung" : sebar ? "Pasang berkas ini di butir lain" : jenis ? esc(jenis.nama) : "Pasang bukti dukung",
+        jenis ? "Tahun " + (opsi.tahun || evTahunKini()) + " · " + preset.length + " butir sudah dicentangkan" : judulButir) +
       '<div class="dlg-isi"><p class="galat" hidden></p>' +
       (utama && utama.nama ? '<p class="dlg-ket">Yang diminta di butir ini: <b>' + esc(utama.nama) + "</b></p>" : "") +
+      (jenis ? '<p class="dlg-ket">' + esc(jenis.ket) + "</p>" : "") +
       (!lama && !sebar && daftarBerkas.length ? '<div class="isian"><label for="ev-pakai">Pakai berkas yang sudah ada</label><select id="ev-pakai" class="pilih"><option value="">— berkas baru —</option>' +
         daftarBerkas.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.judul) + "</option>"; }).join("") + "</select></div>" : "") +
       '<div class="isian"><label for="ev-url">Link Google Drive</label><input id="ev-url" type="url" value="' + esc(lama ? evUrl(lama) : sebar ? evUrl(sebar) : "") + '" placeholder="https://drive.google.com/file/d/…" required></div>' +
       '<div class="isian"><label for="ev-judul">Nama berkas</label><input id="ev-judul" type="text" maxlength="200" value="' + esc(lama ? lama.judul : sebar ? sebar.judul : "") + '" placeholder="Misal: SK Tim Kerja ZI 2026"></div>' +
       '<div class="isian"><label for="ev-catatan">Catatan (opsional)</label><input id="ev-catatan" type="text" maxlength="300" value="' + esc(lama ? lama.catatan : "") + '" placeholder="Misal: berlaku sampai Desember 2026"></div>' +
       (lama ? "" :
-        '<div class="isian ev-juga"><label for="ev-juga">' + (sebar ? "Pasang di butir" : "Pasang sekalian di butir lain") + "</label>" +
+        (jenis ? '<div class="isian ev-juga"><label>Butir yang memakai dokumen ini</label>' + bbPresetHtml(preset) +
+          '<small class="isian-ket">Semua sudah dicentang. Hilangkan centang kalau ada butir yang ternyata tidak memakai berkas ini.</small></div>' : "") +
+        '<div class="isian ev-juga"><label for="ev-juga">' + (sebar ? "Pasang di butir" : jenis ? "Tambah butir lain (opsional)" : "Pasang sekalian di butir lain") + "</label>" +
         '<div class="kotak-saring"><input id="ev-juga" type="search" value="' + esc(qAwal) + '" placeholder="Cari butir di evaluasi lain, misalnya SK Tim" autocomplete="off"></div>' +
-        '<div id="ev-usul" class="ev-usul">' + evUsulHtml(qAwal, lewati, berkasAwal, peta, utama ? utama.ev : (sebar ? sebar.evaluasi : "")) + "</div>" +
+        '<div id="ev-usul" class="ev-usul">' + evUsulHtml(qAwal, lewati, berkasAwal, peta, utama ? utama.ev : (sebar ? sebar.evaluasi : ""), kunciPreset) + "</div>" +
         '<small class="isian-ket">Centang butir yang memakai berkas yang sama — di LKE mana pun dan tahun mana pun. Sekali simpan, berkas langsung terpasang di semuanya.</small></div>') +
       "</div>" + kakiDlg("", "Simpan") + "</form>", true);
 
@@ -1793,12 +1902,12 @@
         $("#ev-url").value = evUrl(pilih);
         $("#ev-judul").value = pilih.judul;
         if (kotakJuga && !kotakJuga.value) { kotakJuga.value = evKataKunci(pilih.judul); }
-        if (kotakJuga) $("#ev-usul").innerHTML = evUsulHtml(kotakJuga.value, lewati, pilih.berkas, peta, utama ? utama.ev : "");
+        if (kotakJuga) $("#ev-usul").innerHTML = evUsulHtml(kotakJuga.value, lewati, pilih.berkas, peta, utama ? utama.ev : "", kunciPreset);
       });
     }
     if (kotakJuga) {
       kotakJuga.addEventListener("input", function () {
-        $("#ev-usul").innerHTML = evUsulHtml(kotakJuga.value, lewati, berkasAwal, peta, utama ? utama.ev : (sebar ? sebar.evaluasi : ""));
+        $("#ev-usul").innerHTML = evUsulHtml(kotakJuga.value, lewati, berkasAwal, peta, utama ? utama.ev : (sebar ? sebar.evaluasi : ""), kunciPreset);
       });
     }
     form.addEventListener("submit", function (ev) {
@@ -2194,6 +2303,7 @@
           case "ev-sebar": (function () { var x = null; (EV.bukti || []).forEach(function (y) { if (y.id === t.getAttribute("data-id")) x = y; }); if (x) dialogBukti({ sebar: x }); })(); return;
           case "ev-lepas": evLepas(t); return;
           case "ev-saring": EV.saring = t.getAttribute("data-nilai") || "semua"; saringEvaluasi(); return;
+          case "bb-pasang": dialogBukti({ bersama: t.getAttribute("data-id"), tahun: +t.getAttribute("data-tahun") }); return;
           case "ev-ulang": EV.galat = ""; EV.bukti = null; renderRute(); return;
           case "st-siapkan": stSiapkan(t); return;
           case "st-atur": dialogSuratBulan(t.getAttribute("data-th"), +t.getAttribute("data-bl")); return;
@@ -2218,8 +2328,12 @@
       else if ((b = e.target.closest("[data-bgrup]"))) { baruState.grup = b.getAttribute("data-bgrup"); baruState.tampil = 100; renderTerbaru(); }
       else if ((b = e.target.closest("[data-furut]"))) { folderState.urut = b.getAttribute("data-furut"); renderFolder(folderState.n); }
     });
+    document.addEventListener("change", function (e) {
+      if (e.target.id === "bb-tahun") { EV.bbTahun = +e.target.value; renderRute(); }
+    });
     document.addEventListener("input", function (e) {
       if (e.target.id === "kanal-q") { kanalQ = e.target.value; saringKanal(); }
+      else if (e.target.id === "bb-tahun") { EV.bbTahun = +e.target.value; renderRute(); }
       else if (e.target.id === "ev-q") { EV.q = e.target.value; saringEvaluasi(); }
     });
     document.addEventListener("change", function (e) { if (e.target.id === "baru-kat") { baruState.kat = e.target.value; baruState.tampil = 100; renderTerbaru(); } });
