@@ -1562,8 +1562,8 @@
     var peta = evPeta(), dipakaiUlang = 0;
     Object.keys(peta.berkas).forEach(function (b) { if (peta.berkas[b].length > 1) dipakaiUlang++; });
     v.innerHTML =
-      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Bukti Dukung</p>' +
-      '<h1>Bukti Dukung Evaluasi</h1><p class="kepala-sub">Satu berkas cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, maupun PPID.</p></div></section>' +
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span>Satu Bukti</p>' +
+      '<h1>Satu Bukti</h1><p class="kepala-sub">Bukti dukung untuk semua evaluasi dalam satu tempat. Satu berkas cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, maupun PPID.</p></div></section>' +
       '<div class="bungkus isi-halaman">' +
       (dipakaiUlang ? '<p class="st-catatan">' + ic("copy") + "<span><b>" + angka(dipakaiUlang) + "</b> berkas sudah dipakai di lebih dari satu butir — itu yang dulu dikerjakan dua kali.</span></p>" : "") +
       '<div class="pilih-grid">' + evSemua().map(function (e) {
@@ -1616,7 +1616,7 @@
     void q;
 
     v.innerHTML =
-      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span><a href="#/evaluasi">Bukti Dukung</a><span aria-hidden="true">/</span>' + esc(e.nama) + "</p>" +
+      '<section class="kepala-halaman"><div class="bungkus"><p class="jejak"><a href="#/">Cari</a><span aria-hidden="true">/</span><a href="#/evaluasi">Satu Bukti</a><span aria-hidden="true">/</span>' + esc(e.nama) + "</p>" +
       "<h1>" + esc(e.nama) + " " + e.tahun + "</h1>" + (e.ket ? '<p class="kepala-sub">' + esc(e.ket) + "</p>" : "") +
       (e.sumber && e.sumber.url ? '<p class="kepala-sub"><a href="' + esc(e.sumber.url) + '" target="_blank" rel="noopener">' + ic("link") + esc(e.sumber.nama) + "</a></p>" : "") + "</div></section>" +
       '<div class="bungkus isi-halaman">' +

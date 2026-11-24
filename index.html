@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=20261124">
 <script>
   /* tema: ikuti pilihan terakhir, atau pengaturan perangkat */
   (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
@@ -46,7 +46,7 @@
         <a href="#/" data-nav="beranda">Cari</a>
         <a href="#/kategori" data-nav="kategori">Kategori</a>
         <a href="#/surat" data-nav="surat">Surat Tugas</a>
-        <a href="#/evaluasi" data-nav="evaluasi">Bukti</a>
+        <a href="#/evaluasi" data-nav="evaluasi">Satu Bukti</a>
         <a href="#/monev" data-nav="monev">Monev</a>
         <a href="#/kanal" data-nav="kanal">Kanal</a>
         <a href="#/panduan" data-nav="panduan">Panduan</a>
@@ -65,7 +65,7 @@
     <nav class="nav-hp" aria-label="Menu utama (HP)">
       <a href="#/" data-nav="beranda"><span data-ikon="search"></span>Cari</a>
       <a href="#/surat" data-nav="surat"><span data-ikon="file"></span>Surat</a>
-      <a href="#/evaluasi" data-nav="evaluasi"><span data-ikon="clipboard"></span>Bukti</a>
+      <a href="#/evaluasi" data-nav="evaluasi"><span data-ikon="clipboard"></span>Satu Bukti</a>
       <a href="#/monev" data-nav="monev"><span data-ikon="chart"></span>Monev</a>
       <a href="#/kanal" data-nav="kanal"><span data-ikon="door"></span>Kanal</a>
       <a href="#/panduan" data-nav="panduan"><span data-ikon="book"></span>Panduan</a>
@@ -163,7 +163,7 @@
           <a href="#pd-kategori">Kategori tim</a>
           <a href="#pd-terbaru">Berkas terbaru</a>
           <a href="#pd-surat">Surat tugas</a>
-          <a href="#pd-evaluasi">Bukti dukung evaluasi</a>
+          <a href="#pd-evaluasi">Satu Bukti</a>
           <a href="#pd-kanal">Kanal BPS Kukar</a>
           <a href="#pd-monev">Monev mingguan tim</a>
           <a href="#pd-kelola">Untuk pengelola</a>
@@ -236,11 +236,11 @@
             <p class="pd-tip">Siapa yang boleh membuka folder diatur di Google Drive, bukan dari PINTU. Setelah folder dibuat, buka folder <b>Surat Tugas BPS Kukar</b> di Drive dan atur berbagi sesuai kebijakan kantor — misalnya hanya pegawai tertentu, atau siapa saja yang memiliki link seperti praktik yang berjalan sekarang.</p>
           </section>
           <section id="pd-evaluasi">
-            <h2>Bukti dukung evaluasi</h2>
-            <p>Satu berkas sering diminta oleh beberapa evaluasi sekaligus: SK tim, maklumat pelayanan, laporan SKD, Renstra/PK/LKIP, DIP, sampai notula rapat. Menu <b>Bukti Dukung</b> membuat berkas itu cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, atau PPID.</p>
+            <h2>Satu Bukti — bukti dukung evaluasi</h2>
+            <p>Satu berkas sering diminta oleh beberapa evaluasi sekaligus: SK tim, maklumat pelayanan, laporan SKD, Renstra/PK/LKIP, DIP, sampai notula rapat. Menu <b>Satu Bukti</b> membuat berkas itu cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, atau PPID.</p>
             <h3>Cara memakainya</h3>
             <ul>
-              <li>Buka menu <b>Bukti Dukung</b>, pilih evaluasinya. Angka di tiap kartu menunjukkan berapa berkas yang diminta sudah terpasang.</li>
+              <li>Buka menu <b>Satu Bukti</b>, pilih evaluasinya. Angka di tiap kartu menunjukkan berapa berkas yang diminta sudah terpasang.</li>
               <li>Di dalam evaluasi, tiap butir memuat daftar dokumen yang diminta. Klik <b>Pasang berkas</b>, lalu tempel tautan Google Drive berkas atau foldernya.</li>
               <li>Kalau berkas itu sudah pernah dipasang di evaluasi lain, pilih saja dari daftar <b>Pakai berkas yang sudah ada</b> — tidak perlu mengunggah ulang, dan tandanya akan muncul sebagai “dipakai juga di butir lain”.</li>
               <li>Saringan <b>Belum lengkap</b> memperlihatkan sisa pekerjaan, jadi tidak perlu lagi merekap manual mana yang kosong.</li>
@@ -330,10 +330,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="assets/js/config.js"></script>
-<script src="assets/js/kanal.js"></script>
-<script src="assets/js/evaluasi.js"></script>
-<script src="assets/js/cari.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="assets/js/config.js?v=20261124"></script>
+<script src="assets/js/kanal.js?v=20261124"></script>
+<script src="assets/js/evaluasi.js?v=20261124"></script>
+<script src="assets/js/cari.js?v=20261124"></script>
+<script src="assets/js/app.js?v=20261124"></script>
 </body>
 </html>
