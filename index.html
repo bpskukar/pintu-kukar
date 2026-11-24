@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/style.css?v=20261124b">
+<link rel="stylesheet" href="assets/css/style.css?v=20261124c">
 <script>
   /* tema: ikuti pilihan terakhir, atau pengaturan perangkat */
   (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
@@ -240,9 +240,11 @@
             <p>Satu berkas sering diminta oleh beberapa evaluasi sekaligus: SK tim, maklumat pelayanan, laporan SKD, Renstra/PK/LKIP, DIP, sampai notula rapat. Menu <b>Satu Bukti</b> membuat berkas itu cukup diunggah sekali ke Drive kantor, lalu dipasang di butir mana pun yang membutuhkannya — ZI, PEKPPP, SAKIP, atau PPID.</p>
             <h3>Cara memakainya</h3>
             <ul>
-              <li>Buka menu <b>Satu Bukti</b>, pilih evaluasinya. Angka di tiap kartu menunjukkan berapa berkas yang diminta sudah terpasang.</li>
+              <li>Buka menu <b>Satu Bukti</b>, pilih tahunnya, lalu pilih evaluasinya. Angka di tiap kartu menunjukkan berapa berkas yang diminta sudah terpasang.</li>
               <li>Di dalam evaluasi, tiap butir memuat daftar dokumen yang diminta. Klik <b>Pasang berkas</b>, lalu tempel tautan Google Drive berkas atau foldernya.</li>
-              <li>Kalau berkas itu sudah pernah dipasang di evaluasi lain, pilih saja dari daftar <b>Pakai berkas yang sudah ada</b> — tidak perlu mengunggah ulang, dan tandanya akan muncul sebagai “dipakai juga di butir lain”.</li>
+              <li><b>Sekali pasang untuk semua LKE.</b> Di jendela yang sama ada kotak <b>Pasang sekalian di butir lain</b>: ketik kata kunci dokumennya (misalnya “SK Tim”), lalu centang butir di LKE lain yang memakai berkas yang sama. Centang empat butir di empat evaluasi, sekali Simpan, selesai — tidak perlu mengulang pekerjaan yang sama empat kali.</li>
+              <li>Kalau berkasnya sudah terlanjur dipasang di satu tempat, ikon <b>salin</b> di sebelah berkas itu membuka jendela yang sama untuk menyebarkannya ke butir lain.</li>
+              <li>Berkas yang dipakai di lebih dari satu tempat ditandai “dipakai juga di N butir lain”, dan karena yang dicatat hanya tautannya, revisi berkas di Drive otomatis berlaku di semua butir.</li>
               <li>Saringan <b>Belum lengkap</b> memperlihatkan sisa pekerjaan, jadi tidak perlu lagi merekap manual mana yang kosong.</li>
             </ul>
             <h3>Isi instrumennya</h3>
@@ -330,10 +332,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="assets/js/config.js?v=20261124b"></script>
-<script src="assets/js/kanal.js?v=20261124b"></script>
-<script src="assets/js/evaluasi.js?v=20261124b"></script>
-<script src="assets/js/cari.js?v=20261124b"></script>
-<script src="assets/js/app.js?v=20261124b"></script>
+<script src="assets/js/config.js?v=20261124c"></script>
+<script src="assets/js/kanal.js?v=20261124c"></script>
+<script src="assets/js/evaluasi.js?v=20261124c"></script>
+<script src="assets/js/cari.js?v=20261124c"></script>
+<script src="assets/js/app.js?v=20261124c"></script>
 </body>
 </html>

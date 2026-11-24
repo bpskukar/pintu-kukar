@@ -1421,35 +1421,68 @@ function buktiData_() {
 }
 
 function buktiSimpan_(u, b) {
-  var ev = String(b.evaluasi || '').trim().slice(0, 40);
-  var butir = String(b.butir || '').trim().slice(0, 40);
-  if (!ev || !butir) throw new Error('Evaluasi dan butir wajib diisi.');
-  var syarat = String(b.syarat == null ? '' : b.syarat).trim().slice(0, 6);
   var url = String(b.url || '').trim();
   var berkas = idDrive_(url);
   if (!berkas) throw new Error('Tempel tautan Google Drive berkas atau foldernya (yang memuat /file/d/… atau /folders/…).');
   var jenis = /\/folders\//.test(url) ? 'folder' : 'berkas';
   var judul = String(b.judul || '').trim().slice(0, 200) || (jenis === 'folder' ? 'Folder bukti dukung' : 'Berkas bukti dukung');
-  var daftar = baca_('Bukti'), baris = null, bentrok = false;
-  daftar.forEach(function (x) {
-    if (b.id && x.id === String(b.id)) baris = x;
-    else if (x.evaluasi === ev && x.butir === butir && x.syarat === syarat && x.berkas === berkas) bentrok = true;
-  });
-  if (bentrok) throw new Error('Berkas itu sudah terpasang di butir ini.');
-  if (baris && baris.oleh && baris.oleh !== u.id) wajibPeran_(u, 'pengelola');
-  if (!baris) {
-    baris = { id: idBaru_(), evaluasi: ev, butir: butir, syarat: syarat, oleh: u.id };
-    daftar.push(baris);
+  var catatan = String(b.catatan || '').trim().slice(0, 300);
+  var waktu = sekarang_();
+  var daftar = baca_('Bukti');
+
+  /* ubah satu baris yang sudah ada */
+  if (b.id) {
+    var baris = null;
+    daftar.forEach(function (x) { if (x.id === String(b.id)) baris = x; });
+    if (!baris) throw new Error('Bukti tidak ditemukan.');
+    if (baris.oleh && baris.oleh !== u.id) wajibPeran_(u, 'pengelola');
+    baris.berkas = berkas; baris.jenis = jenis; baris.judul = judul;
+    baris.url = url.slice(0, 400); baris.catatan = catatan; baris.diubah = waktu;
+    tulis_('Bukti', daftar);
+    catat_(u.nama || u.id, 'Ubah bukti dukung', baris.evaluasi + ' ' + baris.butir + ' · ' + judul);
+    return { ok: true, bukti: daftar, dipasang: 0, lewat: 0 };
   }
-  baris.berkas = berkas;
-  baris.jenis = jenis;
-  baris.judul = judul;
-  baris.url = url.slice(0, 400);
-  baris.catatan = String(b.catatan || '').trim().slice(0, 300);
-  baris.diubah = sekarang_();
+
+  /* pasang satu berkas ke satu atau banyak butir sekaligus */
+  var tujuan = [];
+  if (b.tujuan && b.tujuan.length) {
+    b.tujuan.forEach(function (t) {
+      tujuan.push({
+        evaluasi: String(t.evaluasi || '').trim().slice(0, 40),
+        butir: String(t.butir || '').trim().slice(0, 40),
+        syarat: String(t.syarat == null ? '' : t.syarat).trim().slice(0, 6)
+      });
+    });
+  } else {
+    tujuan.push({
+      evaluasi: String(b.evaluasi || '').trim().slice(0, 40),
+      butir: String(b.butir || '').trim().slice(0, 40),
+      syarat: String(b.syarat == null ? '' : b.syarat).trim().slice(0, 6)
+    });
+  }
+  tujuan = tujuan.filter(function (t) { return t.evaluasi && t.butir; });
+  if (!tujuan.length) throw new Error('Pilih dulu butir mana yang memakai berkas ini.');
+  if (tujuan.length > 60) throw new Error('Terlalu banyak butir sekaligus. Pilih paling banyak 60.');
+
+  var ada = {};
+  daftar.forEach(function (x) { ada[x.evaluasi + '|' + x.butir + '|' + x.syarat + '|' + x.berkas] = true; });
+  var dipasang = 0, lewat = 0, contoh = '';
+  tujuan.forEach(function (t) {
+    var kunci = t.evaluasi + '|' + t.butir + '|' + t.syarat + '|' + berkas;
+    if (ada[kunci]) { lewat++; return; }
+    ada[kunci] = true;
+    daftar.push({
+      id: idBaru_(), evaluasi: t.evaluasi, butir: t.butir, syarat: t.syarat,
+      berkas: berkas, jenis: jenis, judul: judul, url: url.slice(0, 400),
+      catatan: catatan, oleh: u.id, diubah: waktu
+    });
+    dipasang++;
+    if (!contoh) contoh = t.evaluasi + ' ' + t.butir;
+  });
+  if (!dipasang) throw new Error('Berkas itu sudah terpasang di semua butir yang dipilih.');
   tulis_('Bukti', daftar);
-  catat_(u.nama || u.id, 'Pasang bukti dukung', ev + ' ' + butir + (syarat ? '.' + syarat : '') + ' · ' + judul);
-  return { ok: true, bukti: daftar };
+  catat_(u.nama || u.id, 'Pasang bukti dukung', judul + ' · ' + dipasang + ' butir (' + contoh + (dipasang > 1 ? ', dll' : '') + ')');
+  return { ok: true, bukti: daftar, dipasang: dipasang, lewat: lewat };
 }
 
 function buktiHapus_(u, b) {
