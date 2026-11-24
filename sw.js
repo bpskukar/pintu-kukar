@@ -1,6 +1,6 @@
 /* PINTU Kukar — service worker: halaman tetap terbuka walau sinyal lemah.
    Hanya berkas situs yang disimpan. Daftar berkas disimpan terpisah (IndexedDB) oleh aplikasi. */
-var CACHE = "pintu-v20261124g";
+var CACHE = "pintu-v20261124h";
 var INTI = ["./", "index.html", "assets/css/style.css", "assets/js/config.js", "assets/js/cari.js", "assets/js/kanal.js", "assets/js/evaluasi.js", "assets/js/bersama.js", "assets/js/bukti-lke.js", "assets/js/app.js", "manifest.webmanifest", "assets/img/favicon.svg", "assets/img/icon-192.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(INTI).catch(function () {}); }).then(function () { return self.skipWaiting(); }));

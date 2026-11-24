@@ -1255,6 +1255,27 @@ var MONEV_CONTOH = {
     ['Survei Khusus Triwulanan Neraca Pengeluaran (SKTNPE)', 11, 11, 'Triwulanan'],
     ['Survei Khusus Neraca Produksi (SKNP)', 69, 69, 'Tahunan'],
     ['Pendataan Lengkap Perguruan Tinggi', 24, 20, 'Triwulanan']
+  ],
+  diseminasi: [
+    ['Updating Data Tabel Dinamis', 5, 10, 'Bulanan'],
+    ['Penambahan Data Tabel Dinamis', 3, 5, 'Bulanan'],
+    ['Pendaftaran ARC Publikasi Statistik', 24, 2, 'Bulanan'],
+    ['Updating PINTAR KUKAR', 1, 1, 'Bulanan'],
+    ['Infografis yang diterbitkan', 1, 0, 'Bulanan'],
+    ['Updating Berita dan Siaran Pers', 1, 5, 'Bulanan'],
+    ['Pengisian SKD', 3, 5, 'Bulanan'],
+    ['Layanan Statistik', 0, 5, 'Bulanan'],
+    ['Konsultasi Statistik (offline/online)', 0, 3, 'Bulanan']
+  ],
+  sektoral: [
+    ['Nilai TPSS 2026 (triwulan IV, target 108,34)', 108.34, 112.75, 'Tahunan'],
+    ['EPSS U1 Persiapan (indeks domain)', 100, 100, 'Triwulanan'],
+    ['EPSS U2 Pelaksanaan (indeks domain)', 100, 78, 'Triwulanan'],
+    ['EPSS U3 Pelaporan (indeks domain)', 100, 95, 'Triwulanan'],
+    ['EPSS U4 Monitoring dan Evaluasi (indeks domain)', 100, 50, 'Triwulanan'],
+    ['EPSS Tambahan T1 Internalisasi pembinaan', 100, 0, 'Triwulanan'],
+    ['EPSS Tambahan T2 Aktivitas pembinaan', 100, 0, 'Triwulanan'],
+    ['EPSS Output O1 Capaian output dan aliran data sektoral', 100, 66, 'Triwulanan']
   ]
 };
 
