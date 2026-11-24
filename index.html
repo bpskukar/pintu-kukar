@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/style.css?v=20261124f">
+<link rel="stylesheet" href="assets/css/style.css?v=20261124g">
 <script>
   /* tema: ikuti pilihan terakhir, atau pengaturan perangkat */
   (function () { try { var t = localStorage.getItem("pintu-tema"); if (t === "gelap" || t === "terang") document.documentElement.setAttribute("data-theme", t === "gelap" ? "dark" : "light"); } catch (e) {} })();
@@ -265,28 +265,23 @@
             <p class="pd-tip">Mau menambah atau mengganti kanal? Sunting berkas <b>assets/js/kanal.js</b> di repositori GitHub <b>bpskukar/pintu-kukar</b>, commit, lalu tunggu satu menit. Tidak perlu menyentuh Apps Script.</p>
           </section>
           <section id="pd-monev">
-            <h2>Monev mingguan tim</h2>
-            <p>Menu <b>Monev</b> memantau pekerjaan rutin tiap tim kerja. Polanya sederhana: rencana dan target disusun sekali di awal bulan, lalu realisasinya dicatat tiap minggu. Minggu dihitung per tanggal — M1 tanggal 1–7, M2 tanggal 8–14, M3 tanggal 15–21, M4 tanggal 22–28, dan M5 sisa tanggal di akhir bulan.</p>
-            <h3>Menyusun rencana bulanan</h3>
+            <h2>Monev tim kerja</h2>
+            <p>Monev tim kerja memakai satu berkas <b>Monev Tim Kerja</b> di Google Drive akun kantor, dengan <b>satu tab untuk tiap tim</b>. Tim mengisi di spreadsheet seperti biasa; PINTU membaca angkanya dan menampilkan evaluasinya.</p>
+            <h3>Untuk tim</h3>
             <ul>
-              <li>Buka menu <b>Monev</b>, klik tim Anda, lalu <b>Atur rencana</b>.</li>
-              <li>Baru pertama kali? Tombol <b>Pakai contoh rencana</b> mengisi kegiatan rutin tim Anda beserta satuan dan target awal. Sesuaikan angkanya, hapus yang tidak dipakai, tambahkan yang kurang.</li>
-              <li>Bulan berikutnya cukup klik <b>Salin bulan lalu</b>, lalu ubah targetnya.</li>
-              <li>Satu baris berisi satu kegiatan rutin, satuannya (dokumen, laporan, kegiatan, sampel), dan target sebulan. Target inilah yang dipakai menghitung persentase capaian.</li>
+              <li>Buka menu <b>Monev</b>, cari kartu tim Anda, klik <b>Buka tab spreadsheet</b> — langsung mendarat di tab tim sendiri.</li>
+              <li>Isi kolomnya: <b>No, Nama Kegiatan, Target, Realisasi, Periode</b>. Satu baris satu kegiatan, angka saja pada Target dan Realisasi.</li>
+              <li>Capaian dihitung otomatis. Perubahan tampil di PINTU paling lambat satu menit kemudian.</li>
             </ul>
-            <h3>Mengisi tiap minggu</h3>
+            <h3>Untuk pimpinan dan admin</h3>
             <ul>
-              <li>Klik <b>Isi minggu ini</b>, pilih minggunya, lalu isi jumlah yang <b>selesai minggu itu</b> — bukan jumlah kumulatif sejak awal bulan.</li>
-              <li>Status dipilih per kegiatan: Berjalan, Selesai, Terkendala, atau Belum mulai. Yang bertanda <b>Terkendala</b> muncul di dasbor dan di daftar kendala, jadi mudah dibahas saat rapat.</li>
-              <li>Minggu yang sama boleh diisi ulang kapan saja; isian terbaru menimpa yang lama, tidak menumpuk.</li>
+              <li>Halaman Monev menampilkan jumlah tim aktif, kegiatan yang dipantau, capaian keseluruhan, dan tim yang belum mengisi.</li>
+              <li>Klik nama tim untuk melihat rincian kegiatannya, lengkap dengan capaian per kegiatan dan tombol memperbarui di spreadsheet.</li>
+              <li>Tombol <b>Buat spreadsheet monev</b> (sekali saja) membuat berkasnya di Drive kantor beserta tab tiap tim. <b>Segarkan tab tim</b> dipakai kalau ada tim baru.</li>
+              <li><b>Kelola tim</b> untuk menambah, menonaktifkan, atau mengganti ketua tim. Tab tim baru dibuat lewat Segarkan tab tim.</li>
+              <li>Siapa yang boleh mengisi diatur di Google Drive — bagikan berkasnya ke pegawai dengan akses edit.</li>
             </ul>
-            <h3>Membaca dasbor</h3>
-            <ul>
-              <li>Empat kartu di atas menunjukkan berapa tim yang sudah melapor minggu ini, capaian seluruh kantor, jumlah kegiatan terkendala, dan tim yang belum menyusun rencana.</li>
-              <li>Pada kartu tiap tim, angka kecil 1–5 adalah status laporan tiap minggu: hijau berarti sudah mengisi, merah berarti minggu yang sudah lewat tapi belum diisi, abu-abu berarti minggu yang belum tiba.</li>
-              <li>Tombol <b>Unduh CSV</b> mengunduh rekap bulan berjalan untuk dilampirkan ke laporan atau diolah di Excel.</li>
-            </ul>
-            <p class="pd-tip">Siapa yang boleh mengisi? Ketua tim untuk timnya sendiri, serta pengelola dan admin untuk semua tim. Semua pegawai bisa melihat dasbor. Admin menetapkan ketua lewat <b>Kelola tim</b> di halaman Monev — isi dengan email/ID akun PINTU orang tersebut.</p>
+            <p class="pd-tip">PINTU hanya membaca spreadsheet, tidak pernah mengubahnya. Jadi tim tetap bebas menambah kolom catatan sendiri di sebelah kanan tanpa mengganggu tampilan di PINTU.</p>
           </section>
           <section id="pd-kelola">
             <h2>Untuk pengelola</h2>
@@ -332,12 +327,12 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="assets/js/config.js?v=20261124f"></script>
-<script src="assets/js/kanal.js?v=20261124f"></script>
-<script src="assets/js/evaluasi.js?v=20261124f"></script>
-<script src="assets/js/bersama.js?v=20261124f"></script>
-<script src="assets/js/bukti-lke.js?v=20261124f"></script>
-<script src="assets/js/cari.js?v=20261124f"></script>
-<script src="assets/js/app.js?v=20261124f"></script>
+<script src="assets/js/config.js?v=20261124g"></script>
+<script src="assets/js/kanal.js?v=20261124g"></script>
+<script src="assets/js/evaluasi.js?v=20261124g"></script>
+<script src="assets/js/bersama.js?v=20261124g"></script>
+<script src="assets/js/bukti-lke.js?v=20261124g"></script>
+<script src="assets/js/cari.js?v=20261124g"></script>
+<script src="assets/js/app.js?v=20261124g"></script>
 </body>
 </html>

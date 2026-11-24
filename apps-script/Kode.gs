@@ -59,7 +59,8 @@ var PENGATURAN_AWAL = {
   sertakanDibagikan: true,
   folderAbaikan: [],
   pintasan: [],
-  suratTugas: { akar: '', tahun: {} }
+  suratTugas: { akar: '', tahun: {} },
+  monevSheet: { id: '', tab: {} }
 };
 var FIELD_BERKAS = 'id,name,mimeType,parents,modifiedTime,createdTime,size,trashed,shortcutDetails(targetId,targetMimeType)';
 
@@ -171,7 +172,8 @@ function doPost(e) {
         if (typeof monevAtur_ !== 'function') throw new Error('Monev kegiatan belum terpasang: berkas Monev.gs tidak ada di proyek Apps Script ini.');
         return json_(denganKunci_(function () { return monevAtur_(u, b); }));
       /* Monev mingguan tim kerja (di berkas ini) */
-      case 'monevTim': return json_(monevData_(u, b));
+      case 'monevTim': return json_(monevTimData_());
+      case 'monevTimSiapkan': return json_(denganKunci_(function () { return monevTimSiapkan_(u); }));
       /* Bukti dukung evaluasi: ZI, PEKPPP, SAKIP, PPID */
       case 'bukti': return json_(buktiData_());
       case 'buktiSimpan': return json_(denganKunci_(function () { return buktiSimpan_(u, b); }));
@@ -1237,6 +1239,118 @@ function wajibTim_(u, t) {
   }
 }
 
+/* ===================== Monev tim kerja (berbasis spreadsheet) =====================
+   Satu berkas "Monev Tim Kerja <tahun>" berisi satu tab per tim.
+   Kolom tiap tab: No | Nama Kegiatan | Target | Realisasi | Periode.
+   PINTU hanya membaca; pengisian dilakukan tim langsung di spreadsheet. */
+var MONEV_KOLOM = ['No', 'Nama Kegiatan', 'Target', 'Realisasi', 'Periode'];
+var MONEV_CONTOH = {
+  neraca: [
+    ['Survei Triwulanan Lembaga Non Profit (SKLNP)', 40, 38, 'Triwulanan'],
+    ['Survei Khusus Studi Penyusunan Perubahan Inventori (SKSPPI)', 60, 60, 'Tahunan'],
+    ['Penyusunan PDRB Triwulanan', 4, 4, 'Triwulanan'],
+    ['Penyusunan fenomena pendukung PDRB', 4, 4, 'Triwulanan'],
+    ['Rekonsiliasi PDRB', 4, 4, 'Triwulanan'],
+    ['Survei Khusus Triwulanan Neraca Produksi (SKTNP)', 59, 59, 'Triwulanan'],
+    ['Survei Khusus Triwulanan Neraca Pengeluaran (SKTNPE)', 11, 11, 'Triwulanan'],
+    ['Survei Khusus Neraca Produksi (SKNP)', 69, 69, 'Tahunan'],
+    ['Pendataan Lengkap Perguruan Tinggi', 24, 20, 'Triwulanan']
+  ]
+};
+
+function monevAngka_(v) {
+  var x = parseFloat(String(v == null ? '' : v).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+  return isFinite(x) ? x : 0;
+}
+
+function monevSiapkanTab_(ss, t) {
+  var nama = String(t.singkat || t.nama || t.id).slice(0, 90);
+  var sh = ss.getSheetByName(nama);
+  if (!sh) {
+    sh = ss.insertSheet(nama);
+    sh.getRange(1, 1, 1, MONEV_KOLOM.length).setValues([MONEV_KOLOM]);
+    try { sh.setFrozenRows(1); } catch (e) { /* abaikan */ }
+    var contoh = MONEV_CONTOH[t.id];
+    if (contoh && contoh.length) {
+      sh.getRange(2, 1, contoh.length, MONEV_KOLOM.length).setValues(contoh.map(function (r, i) {
+        return [i + 1, r[0], r[1], r[2], r[3]];
+      }));
+    }
+  }
+  var gid = '';
+  try { gid = String(sh.getSheetId()); } catch (e) { gid = ''; }
+  return { nama: nama, gid: gid };
+}
+
+function monevTimSiapkan_(u) {
+  wajibPeran_(u, 'pengelola');
+  var p = bacaPengaturan_(), cfg = p.monevSheet || { id: '', tab: {} };
+  if (!cfg.tab) cfg.tab = {};
+  var ss = null, baru = false;
+  if (cfg.id) { try { ss = SpreadsheetApp.openById(cfg.id); } catch (e) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create('Monev Tim Kerja ' + new Date().getFullYear() + ' - BPS Kukar');
+    cfg.id = ss.getId();
+    cfg.tab = {};
+    baru = true;
+  }
+  var tim = bacaTim_().filter(function (t) { return t.aktif; });
+  var tambah = 0;
+  tim.forEach(function (t) {
+    var adaDulu = !!(cfg.tab[t.id] && ss.getSheetByName(cfg.tab[t.id].nama));
+    cfg.tab[t.id] = monevSiapkanTab_(ss, t);
+    if (!adaDulu) tambah++;
+  });
+  if (baru) {
+    var kosong = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
+    if (kosong && ss.getSheets().length > 1) { try { ss.deleteSheet(kosong); } catch (e) { /* abaikan */ } }
+  }
+  setPengaturan_('monevSheet', cfg);
+  try { CacheService.getScriptCache().remove('monevTim'); } catch (e) { /* abaikan */ }
+  catat_(u.nama || u.id, 'Siapkan spreadsheet monev tim', (baru ? 'berkas baru, ' : '') + tambah + ' tab tim');
+  return { ok: true, baru: baru, tambah: tambah, data: monevTimData_(true) };
+}
+
+function monevTimData_(segar) {
+  var cache = null, simpan = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) { cache = null; }
+  if (cache && !segar) {
+    simpan = cache.get('monevTim');
+    if (simpan) { try { return JSON.parse(simpan); } catch (e) { /* abaikan */ } }
+  }
+  var p = bacaPengaturan_(), cfg = p.monevSheet || { id: '', tab: {} };
+  var hasil = { ok: true, sheetId: cfg.id || '', url: cfg.id ? 'https://docs.google.com/spreadsheets/d/' + cfg.id + '/edit' : '', tim: [], kolom: MONEV_KOLOM };
+  var ss = null;
+  if (cfg.id) { try { ss = SpreadsheetApp.openById(cfg.id); } catch (e) { ss = null; hasil.galat = 'Spreadsheet monev tidak bisa dibuka oleh akun kantor.'; } }
+  bacaTim_().forEach(function (t) {
+    var info = { id: t.id, nama: t.nama, singkat: t.singkat, ketua: t.ketua, warna: t.warna, aktif: !!t.aktif, urutan: t.urutan, gid: '', ada: false, target: 0, realisasi: 0, kegiatan: [] };
+    if (!t.aktif) { hasil.tim.push(info); return; }
+    var tab = cfg.tab && cfg.tab[t.id];
+    if (ss && tab) {
+      var sh = ss.getSheetByName(tab.nama);
+      if (sh) {
+        info.ada = true;
+        info.gid = tab.gid || '';
+        var n = sh.getLastRow() - 1;
+        if (n > 0) {
+          sh.getRange(2, 1, n, MONEV_KOLOM.length).getValues().forEach(function (r) {
+            var nama = String(r[1] == null ? '' : r[1]).trim();
+            if (!nama) return;
+            var target = monevAngka_(r[2]), real = monevAngka_(r[3]);
+            info.kegiatan.push({ no: String(r[0] == null ? '' : r[0]).trim(), nama: nama.slice(0, 200), target: target, realisasi: real, periode: String(r[4] == null ? '' : r[4]).trim().slice(0, 40) });
+            info.target += target;
+            info.realisasi += real;
+          });
+        }
+      }
+    }
+    hasil.tim.push(info);
+  });
+  if (cache) { try { cache.put('monevTim', JSON.stringify(hasil), 60); } catch (e) { /* abaikan */ } }
+  return hasil;
+}
+
+/* ---- monev lama (rencana & realisasi di dalam PINTU), disimpan sebagai arsip ---- */
 function monevData_(u, b) {
   var bulan = bulanSah_(b && b.bulan);
   var tim = bacaTim_();
@@ -1393,7 +1507,7 @@ function simpanTim_(u, b) {
   if (!lama) daftar.push(obj);
   tulis_('Tim', daftar);
   catat_(u.nama, lama ? 'Ubah tim monev' : 'Tambah tim monev', nama + (obj.ketua ? ' · ketua ' + obj.ketua : ' · ketua belum diatur'));
-  return { ok: true, monev: monevData_(u, { bulan: b.bulan }) };
+  return { ok: true, data: monevTimData_(true) };
 }
 
 function hapusTim_(u, b) {
@@ -1404,7 +1518,7 @@ function hapusTim_(u, b) {
   var daftar = bacaTim_().filter(function (t) { return t.id !== id; });
   tulis_('Tim', daftar);
   catat_(u.nama, 'Hapus tim monev', id);
-  return { ok: true, monev: monevData_(u, { bulan: b.bulan }) };
+  return { ok: true, data: monevTimData_(true) };
 }
 
 /* =====================================================================

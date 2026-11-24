@@ -111,15 +111,8 @@ window.PINTU_KANAL = [
    Monev kegiatan lain yang tampil di halaman Monev PINTU.
    Tambah/ubah di sini; tautan relatif terhadap akar situs.
    ===================================================================== */
-window.PINTU_MONEV_KEGIATAN = [
-  {
-    nama: "Semua monev kegiatan",
-    ket: "Halaman Monev Kegiatan berisi seluruh kegiatan yang dipantau.",
-    url: "monev/",
-    ikon: "grid",
-    status: ""
-  }
-];
+/* Monev kegiatan SE2026 sudah selesai; daftar ini dikosongkan. */
+window.PINTU_MONEV_KEGIATAN = [];
 
 /* =====================================================================
    Arsip tautan surat tugas yang pernah dibagikan di grup WhatsApp
